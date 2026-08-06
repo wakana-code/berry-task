@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🍓 BerryTask v0.1</title>
+<style>
+*{margin:0;box-sizing:border-box}
+body{font-family:'Segoe UI','Hiragino Sans',sans-serif;background:#16141c;color:#e8e2ee;min-height:100vh}
+header{display:flex;align-items:center;gap:12px;padding:12px 18px;background:#211d2b;border-bottom:1px solid #322c40}
+header .logo{font-size:20px;font-weight:bold;color:#ff9eb5}
+header .sub{font-size:11px;color:#776b85}
+#tabs{display:flex;gap:4px;padding:10px 14px 0;background:#1b1824}
+.tab{padding:9px 16px;border:none;border-radius:10px 10px 0 0;background:#242030;color:#998aa8;cursor:pointer;font-size:14px}
+.tab.on{background:#2e2940;color:#fff;font-weight:bold}
+.pane{display:none;padding:16px;max-width:760px;margin:0 auto}
+.pane.on{display:block}
+.card{background:#211d2b;border:1px solid #322c40;border-radius:14px;padding:16px;margin-bottom:14px}
+.card h2{font-size:15px;color:#ff9eb5;margin-bottom:10px}
+.btn{padding:9px 16px;border:none;border-radius:10px;background:#3a3348;color:#ddd;cursor:pointer;font-size:13px}
+.btn:hover{background:#453d55}
+.btn.pink{background:linear-gradient(135deg,#ff9eb5,#e0709a);color:#2b1520;font-weight:bold}
+.btn.sm{padding:5px 10px;font-size:12px}
+input,select,textarea{padding:9px 12px;border-radius:9px;border:1px solid #3a3348;background:#17141f;color:#eee;font-size:13px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:#ff9eb5}
+#dayChips{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px}
+.chip{padding:8px 13px;border-radius:12px;background:#242030;color:#998aa8;cursor:pointer;font-size:12.5px;white-space:nowrap;border:1px solid transparent;text-align:center;line-height:1.5}
+.chip.on{background:#2e2940;color:#ff9eb5;border-color:#ff9eb5;font-weight:bold}
+.chip small{display:block;font-size:10px;opacity:.7}
+.task{display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid #322c40;border-radius:12px;margin-bottom:8px;background:#1d1a26}
+.task.done{opacity:.45}
+.task.done .tt{text-decoration:line-through}
+.task.warn{border-color:#c9a542;background:#26221a}
+.task.late{border-color:#c05656;background:#2a1c1e}
+.task .time{font-size:11.5px;color:#8fc7ff;min-width:44px;font-family:Consolas,monospace}
+.task .tt{flex:1;font-size:13.5px;line-height:1.5}
+.task .tt small{display:block;font-size:11px;color:#9b8dae}
+.task .badge{font-size:10px;padding:2px 8px;border-radius:8px;background:#2e2940;color:#c9b3e8;white-space:nowrap}
+.task a{color:#8fc7ff;text-decoration:none;font-size:12px;background:#242030;padding:5px 10px;border-radius:8px;white-space:nowrap}
+.task .ok{border:none;background:#243a2c;color:#8fd8a0;border-radius:8px;padding:6px 11px;cursor:pointer;font-size:12.5px}
+.rule{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #322c40;border-radius:11px;margin-bottom:7px;font-size:13px;flex-wrap:wrap}
+.rule .nm{flex:1;min-width:140px}
+.rule .nm small{display:block;color:#776b85;font-size:11px}
+.rule.off{opacity:.45}
+.sw{width:38px;height:20px;border-radius:11px;background:#3a3348;position:relative;cursor:pointer;flex-shrink:0}
+.sw::after{content:'';position:absolute;width:15px;height:15px;border-radius:50%;background:#998aa8;top:2.5px;left:3px;transition:.15s}
+.sw.on{background:#e0709a}
+.sw.on::after{left:20px;background:#fff}
+.modal{position:fixed;inset:0;background:rgba(10,7,14,.8);display:none;align-items:center;justify-content:center;z-index:50;padding:14px}
+.modal.show{display:flex}
+.mbox{background:#211d2b;border:1px solid #453d55;border-radius:16px;padding:20px;width:min(560px,95vw);max-height:88vh;overflow-y:auto}
+.mbox h3{color:#ff9eb5;font-size:16px;margin-bottom:12px}
+.mbox p{font-size:13px;color:#c9bfd6;line-height:1.8;margin-bottom:12px}
+.hrow{display:flex;gap:6px;margin-bottom:7px;flex-wrap:wrap}
+.hrow input{flex:1;min-width:90px}
+.form{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.form label{font-size:12px;color:#9b8dae}
+.dayck{display:flex;gap:5px;flex-wrap:wrap}
+.dayck span{padding:6px 11px;border-radius:9px;background:#242030;cursor:pointer;font-size:12.5px;border:1px solid transparent}
+.dayck span.on{background:#2e2940;color:#ff9eb5;border-color:#ff9eb5}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#2e2940;padding:10px 24px;border-radius:20px;font-size:13px;opacity:0;transition:.3s;pointer-events:none;z-index:99;border:1px solid #453d55}
+#toast.show{opacity:1}
+.empty{text-align:center;color:#665a75;font-size:13px;padding:30px 0}
+.hint{font-size:11.5px;color:#8d7a99;line-height:1.7;margin-top:8px}
+</style>
+</head>
+<body>
+<header><span class="logo">🍓 BerryTask</span><span class="sub">v0.1 — きみの秘書</span>
+<button class="btn sm" style="margin-left:auto" onclick="openHarvest(true)">📬 Slack収穫</button></header>
+<div id="tabs">
+<button class="tab on" data-p="homePane">🏠 ホーム</button>
+<button class="tab" data-p="zatsuPane">📥 雑多</button>
+<button class="tab" data-p="setPane">⚙️ 設定</button>
+</div>
+
+<div class="pane on" id="homePane">
+<div id="dayChips"></div>
+<div class="card"><h2 id="dayTitle">今日のタスク</h2><div id="taskList"></div></div>
+</div>
+
+<div class="pane" id="zatsuPane">
+<div class="card"><h2>➕ 雑多タスク追加</h2>
+<div class="hrow"><input id="zTitle" placeholder="内容"><input id="zUrl" placeholder="URL(任意)"><input type="date" id="zDate"></div>
+<button class="btn pink" onclick="addZatsu()">追加</button>
+<p class="hint">期限まで毎日表示 / 前日は🟡 / 超過は🔴で出続けます</p></div>
+<div class="card"><h2>📋 雑多タスク一覧</h2><div id="zList"></div></div>
+</div>
+
+<div class="pane" id="setPane">
+<div class="card"><h2>🔁 ルーティン一覧(ON/OFF・編集)</h2><div id="ruleList"></div></div>
+<div class="card"><h2>➕ 新規ルーティン</h2>
+<div class="form">
+<input id="nrName" placeholder="名前">
+<select id="nrKind"><option value="weekly">毎週(曜日指定)</option><option value="monthlyNth">毎月第n曜日</option><option value="everyN">n日ごと</option></select>
+<div id="nrParams"></div>
+<input id="nrTime" placeholder="時間(例 19:00)"><input id="nrLink" placeholder="リンク(任意)">
+<select id="nrCat"><option>勉強</option><option>実績</option><option>趣味</option><option>人間関係</option></select>
+<button class="btn pink" onclick="addRule()">登録</button></div></div>
+</div>
+
+<div class="modal" id="harvestModal"><div class="mbox" id="harvestBox"></div></div>
+<div class="modal" id="editModal"><div class="mbox" id="editBox"></div></div>
+<div id="toast"></div>
+
+<script>
+/* ===== 🍓 BerryTask v0.1 — コアエンジン ===== */
+const LS={rules:'bt_rules',done:'bt_done',zatsu:'bt_zatsu',harvest:'bt_lastHarvest',cycle:'bt_reportCycle',slackWait:'bt_slackWait'};
+const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
+const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+const DOW=['日','月','火','水','木','金','土'];
+const fmt=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const parse=s=>{const[a,b,c]=s.split('-').map(Number);return new Date(a,b-1,c)};
+const addD=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const today=()=>fmt(new Date());
+const hash=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))|0;return Math.abs(h)};
+function nthDow(y,m,nth,dow){const first=new Date(y,m,1);const off=(dow-first.getDay()+7)%7;return new Date(y,m,1+off+(nth-1)*7)}
+const toast=m=>{const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000)};
+
+/* ---------- 初期ルーティン ---------- */
+const SEED=[
+{id:'report',name:'月次レポート(1.5h)',kind:'report',days:[3,6,0],time:'',link:'https://www.nnn.ed.nico/my_course',cat:'勉強',on:true},
+{id:'hread',name:'Hリードテスト',kind:'hread',time:'',link:'',cat:'勉強',on:true,note:'リンクは設定からSlackチャンネルURLを'},
+{id:'info_meet',name:'研究部情報定例会',kind:'monthlyNth',nth:2,dow:3,time:'19:00',link:'',cat:'実績',on:false,note:'現在ステルス中'},
+{id:'ken_meet',name:'研究部定例会',kind:'monthlyNth',nth:4,dow:3,time:'19:00-21:00',link:'',cat:'実績',on:true},
+{id:'miki',name:'研究部miki面談',kind:'monthlyNth',nth:3,dow:4,time:'11:00-11:50',link:'',cat:'実績',on:true},
+{id:'stapla',name:'スタプラ面談',kind:'weekly',days:[4],time:'15:30',link:'https://mail.google.com/mail/u/0/#search/studyplus',cat:'勉強',on:true,derive:[{off:-1,label:'スタプラ記録'}]},
+{id:'jk_chem',name:'塾:化学',kind:'juku',day:1,cat:'勉強',on:true},
+{id:'jk_eng',name:'塾:英語',kind:'juku',day:2,cat:'勉強',on:true},
+{id:'jk_phy',name:'塾:物理',kind:'juku',day:3,cat:'勉強',on:true},
+{id:'jk_math',name:'塾:数学',kind:'juku',day:5,cat:'勉強',on:true},
+{id:'jk_m3',name:'塾:数3',kind:'juku',day:6,cat:'勉強',on:true},
+{id:'dinner',name:'夕飯代請求',kind:'weekly',days:[5],time:'',link:'',cat:'人間関係',on:true},
+{id:'allow',name:'お小遣い請求',kind:'monthlyNth',nth:3,dow:0,time:'',link:'',cat:'人間関係',on:true},
+{id:'sns',name:'LinkedIn/X 投稿',kind:'monthlyNth',nth:4,dow:0,time:'',link:'https://x.com',cat:'実績',on:true},
+{id:'disco',name:'Discord返信',kind:'weekly',days:[0,1,2,3,4,5,6],time:'',link:'https://discord.com/channels/@me',cat:'人間関係',on:true},
+{id:'line',name:'LINE返信',kind:'weekly',days:[0,1,2,3,4,5,6],time:'',link:'https://line.me',cat:'人間関係',on:true},
+{id:'slowly',name:'Slowly返信',kind:'everyN',n:2,anchor:'2026-01-01',time:'',link:'https://web.slowly.app',cat:'人間関係',on:true,slowly:true},
+{id:'gmail',name:'Gmail返信(2件)',kind:'everyN',n:2,anchor:'2026-01-02',time:'',link:'',cat:'人間関係',on:true,note:'リンクは設定からGmail検索URLを'}
+];
+let RULES=load(LS.rules,null);
+if(!RULES){RULES=SEED;save(LS.rules,RULES)}
+let DONE=load(LS.done,{}),ZATSU=load(LS.zatsu,[]),CYCLE=load(LS.cycle,{});
+let selDate=today();
+
+/* ---------- エンジン ---------- */
+function reportCycle(ds){const d=parse(ds);return d.getDate()<=15?`${d.getFullYear()}-${d.getMonth()}`:`${d.getFullYear()}-${d.getMonth()+1}`}
+function hreadDays(y,m){const t1=nthDow(y,m,1,4);return{start:t1,eng:addD(t1,2),mj:addD(t1,3),dead:addD(t1,7),end:addD(t1,8)}}
+function tasksFor(ds){
+  const d=parse(ds),y=d.getFullYear(),m=d.getMonth(),dow=d.getDay(),out=[];
+  const hr=hreadDays(y,m);
+  for(const r of RULES){
+    if(!r.on)continue;
+    if(r.kind==='report'){
+      if(CYCLE[reportCycle(ds)])continue;
+      if(ds===fmt(hr.eng)||ds===fmt(hr.mj))continue;
+      if(r.days.includes(dow)){const cy=reportCycle(ds);const[cyY,cyM]=cy.split('-').map(Number);
+        out.push(mk(r,ds,r.name,{sub:`締切: ${cyM+1}/15`,extra:'cycle'}))}
+    }else if(r.kind==='hread'){
+      if(ds===fmt(hr.eng))out.push(mk(r,ds,'Hリードテスト[英語]',{}));
+      if(ds===fmt(hr.mj))out.push(mk(r,ds,'Hリードテスト[数学/国語]',{}));
+      if(ds===fmt(hr.dead))out.push(mk(r,ds,'Hリード締切(余裕日)',{sub:`実期限: ${fmt(hr.end).slice(5)}`}));
+    }else if(r.kind==='weekly'){
+      if(r.days.includes(dow))out.push(mk(r,ds,r.name,{slowlyCount:r.slowly}));
+      (r.derive||[]).forEach(dv=>{const tgt=addD(d,-dv.off);if(r.days.includes(tgt.getDay()))out.push(mk(r,ds,dv.label,{key:dv.label}))});
+    }else if(r.kind==='monthlyNth'){
+      if(ds===fmt(nthDow(y,m,r.nth,r.dow)))out.push(mk(r,ds,r.name,{}));
+    }else if(r.kind==='everyN'){
+      const diff=Math.round((d-parse(r.anchor))/864e5);
+      if(diff>=0&&diff%r.n===0){let nm=r.name;
+        if(r.slowly)nm=`Slowly返信(${2+hash(ds)%3}人)`;
+        out.push(mk(r,ds,nm,{}))}
+    }else if(r.kind==='juku'){
+      const sub=r.name.replace('塾:','');
+      if(dow===r.day)out.push(mk(r,ds,`${sub} 授業`,{}));
+      if((r.day-dow+7)%7===3)out.push(mk(r,ds,`${sub} 復習(例題)`,{key:'rev1'}));
+      if((r.day-dow+7)%7===2)out.push(mk(r,ds,`${sub} 宿題(問題集)`,{key:'hw'}));
+      if((r.day-dow+7)%7===1)out.push(mk(r,ds,`${sub} 復習(見直し)`,{key:'rev2'}));
+    }
+  }
+  /* 雑多 */
+  for(const z of ZATSU){
+    if(z.done)continue;
+    const due=z.date;
+    if(ds>=z.created&&ds<=due||ds===today()&&due<today()){
+      let cls='';if(due<ds||due<today()&&ds===today())cls='late';else if(addD(parse(ds),1)>parse(due))cls='warn';
+      out.push({key:'z_'+z.id,title:z.title||z.url,sub:`期限: ${due.slice(5)}`,link:z.url,time:'',cat:'雑多',cls,zid:z.id});
+    }
+  }
+  return out.sort((a,b)=>(a.time||'99')<(b.time||'99')?-1:1);
+}
+function mk(r,ds,title,o){return{key:`${r.id}|${ds}|${o.key||''}`,title,sub:o.sub||'',link:r.link,time:r.time||'',cat:r.cat,extra:o.extra,rid:r.id,ds}}
+
+/* ---------- ホーム描画 ---------- */
+function renderChips(){
+  const el=document.getElementById('dayChips');el.innerHTML='';
+  for(let i=0;i<8;i++){const d=addD(new Date(),i),ds=fmt(d);
+    const c=document.createElement('div');c.className='chip'+(ds===selDate?' on':'');
+    c.innerHTML=`${i===0?'今日':i===1?'明日':DOW[d.getDay()]}<small>${d.getMonth()+1}/${d.getDate()}</small>`;
+    c.onclick=()=>{selDate=ds;renderHome()};el.appendChild(c)}
+}
+function renderHome(){
+  renderChips();
+  const d=parse(selDate);
+  document.getElementById('dayTitle').textContent=`${d.getMonth()+1}/${d.getDate()}(${DOW[d.getDay()]})のタスク`;
+  const list=document.getElementById('taskList');list.innerHTML='';
+  const ts=tasksFor(selDate);
+  if(!ts.length){list.innerHTML='<div class="empty">🎉 タスクなし!自由時間!</div>';return}
+  ts.forEach(t=>{
+    const done=DONE[t.key];
+    const el=document.createElement('div');el.className='task'+(done?' done':'')+(t.cls?' '+t.cls:'');
+    el.innerHTML=`<span class="time">${t.time||'--:--'}</span><span class="tt">${esc(t.title)}${t.sub?`<small>${esc(t.sub)}</small>`:''}</span><span class="badge">${t.cat}</span>`;
+    if(t.link){const a=document.createElement('a');a.href=t.link;a.target='_blank';a.textContent='🔗';el.appendChild(a)}
+    const b=document.createElement('button');b.className='ok';b.textContent=done?'↩':'✅';
+    b.onclick=()=>{if(t.zid){const z=ZATSU.find(x=>x.id===t.zid);z.done=!z.done;save(LS.zatsu,ZATSU)}else{DONE[t.key]=!done;save(LS.done,DONE)}renderHome();renderZatsu()};
+    el.appendChild(b);
+    if(t.extra==='cycle'&&!done){const fin=document.createElement('button');fin.className='ok';fin.textContent='🏁 今月分完了';fin.style.fontSize='11px';
+      fin.onclick=()=>{CYCLE[reportCycle(t.ds)]=true;save(LS.cycle,CYCLE);toast('🏁 今月のレポート完了!15日過ぎに復活します');renderHome()};
+      el.appendChild(fin)}
+    list.appendChild(el)});
+}
+const esc=s=>{const d=document.createElement('div');d.textContent=s??'';return d.innerHTML};
+
+/* ---------- 雑多 ---------- */
+function addZatsu(){
+  const t=document.getElementById('zTitle').value.trim(),u=document.getElementById('zUrl').value.trim(),dt=document.getElementById('zDate').value;
+  if(!t&&!u)return toast('😵 内容かURLを');if(!dt)return toast('😵 日付を');
+  ZATSU.push({id:Date.now()+''+Math.random(),title:t,url:u,date:dt,created:today(),done:false});
+  save(LS.zatsu,ZATSU);document.getElementById('zTitle').value='';document.getElementById('zUrl').value='';
+  toast('📥 追加!');renderZatsu();renderHome();
+}
+function renderZatsu(){
+  const el=document.getElementById('zList');el.innerHTML='';
+  if(!ZATSU.length){el.innerHTML='<div class="empty">なし</div>';return}
+  [...ZATSU].sort((a,b)=>a.date<b.date?-1:1).forEach(z=>{
+    const d=document.createElement('div');d.className='task'+(z.done?' done':'')+(z.date<today()&&!z.done?' late':'');
+    d.innerHTML=`<span class="time">${z.date.slice(5)}</span><span class="tt">${esc(z.title||z.url)}</span>`;
+    if(z.url){const a=document.createElement('a');a.href=z.url;a.target='_blank';a.textContent='🔗';d.appendChild(a)}
+    const b=document.createElement('button');b.className='ok';b.textContent=z.done?'↩':'✅';
+    b.onclick=()=>{z.done=!z.done;save(LS.zatsu,ZATSU);renderZatsu();renderHome()};d.appendChild(b);
+    const del=document.createElement('button');del.className='ok';del.style.color='#ff9d9d';del.textContent='🗑';
+    del.onclick=()=>{ZATSU=ZATSU.filter(x=>x.id!==z.id);save(LS.zatsu,ZATSU);renderZatsu();renderHome()};d.appendChild(del);
+    el.appendChild(d)});
+}
+
+/* ---------- 設定 ---------- */
+function renderRules(){
+  const el=document.getElementById('ruleList');el.innerHTML='';
+  RULES.forEach(r=>{
+    const d=document.createElement('div');d.className='rule'+(r.on?'':' off');
+    let desc='';
+    if(r.kind==='weekly')desc='毎週'+r.days.map(x=>DOW[x]).join('');
+    if(r.kind==='monthlyNth')desc=`毎月第${r.nth}${DOW[r.dow]}曜`;
+    if(r.kind==='everyN')desc=`${r.n}日ごと`;
+    if(r.kind==='juku')desc=`毎週${DOW[r.day]}曜(前3日に派生)`;
+    if(r.kind==='report')desc='毎月15日締切/水土日';
+    if(r.kind==='hread')desc='第1木曜〜第2金曜';
+    d.innerHTML=`<span class="nm">${esc(r.name)}<small>${desc}${r.time?' '+r.time:''}${r.note?' / '+esc(r.note):''}${r.link?'':' / ⚠️リンク未設定'}</small></span>`;
+    const sw=document.createElement('div');sw.className='sw'+(r.on?' on':'');
+    sw.onclick=()=>{r.on=!r.on;save(LS.rules,RULES);renderRules();renderHome()};d.appendChild(sw);
+    const eb=document.createElement('button');eb.className='btn sm';eb.textContent='✏️';
+    eb.onclick=()=>openEdit(r.id);d.appendChild(eb);
+    if(r.custom){const del=document.createElement('button');del.className='btn sm';del.textContent='🗑';
+      del.onclick=()=>{RULES=RULES.filter(x=>x.id!==r.id);save(LS.rules,RULES);renderRules();renderHome()};d.appendChild(del)}
+    el.appendChild(d)});
+}
+function openEdit(id){
+  const r=RULES.find(x=>x.id===id);
+  const box=document.getElementById('editBox');
+  let extra='';
+  if(r.kind==='weekly')extra=`<label>曜日</label><div class="dayck" id="eDays">${DOW.map((n,i)=>`<span data-d="${i}" class="${r.days.includes(i)?'on':''}">${n}</span>`).join('')}</div>`;
+  if(r.kind==='monthlyNth')extra=`<label>第n曜日</label><div style="display:flex;gap:6px"><select id="eNth">${[1,2,3,4].map(n=>`<option ${r.nth===n?'selected':''}>${n}</option>`).join('')}</select><select id="eDow">${DOW.map((n,i)=>`<option value="${i}" ${r.dow===i?'selected':''}>${n}曜</option>`).join('')}</select></div>`;
+  if(r.kind==='juku')extra=`<label>授業曜日</label><select id="eDay">${DOW.map((n,i)=>`<option value="${i}" ${r.day===i?'selected':''}>${n}曜</option>`).join('')}</select>`;
+  if(r.kind==='everyN')extra=`<label>何日ごと</label><input id="eN" type="number" value="${r.n}" min="1">`;
+  box.innerHTML=`<h3>✏️ ${esc(r.name)}</h3><div class="form">
+  <label>名前</label><input id="eName" value="${esc(r.name)}">
+  <label>時間</label><input id="eTime" value="${esc(r.time||'')}" placeholder="19:00">
+  <label>リンク(ZoomやSlackチャンネルURL等はここに)</label><input id="eLink" value="${esc(r.link||'')}">
+  ${extra}
+  <div style="display:flex;gap:8px"><button class="btn pink" id="eSave">💾 保存</button><button class="btn" onclick="document.getElementById('editModal').classList.remove('show')">閉じる</button></div></div>`;
+  if(r.kind==='weekly')box.querySelectorAll('#eDays span').forEach(s=>s.onclick=()=>s.classList.toggle('on'));
+  document.getElementById('eSave').onclick=()=>{
+    r.name=document.getElementById('eName').value.trim()||r.name;
+    r.time=document.getElementById('eTime').value.trim();
+    r.link=document.getElementById('eLink').value.trim();
+    if(r.kind==='weekly')r.days=[...box.querySelectorAll('#eDays span.on')].map(s=>+s.dataset.d);
+    if(r.kind==='monthlyNth'){r.nth=+document.getElementById('eNth').value;r.dow=+document.getElementById('eDow').value}
+    if(r.kind==='juku')r.day=+document.getElementById('eDay').value;
+    if(r.kind==='everyN')r.n=Math.max(1,+document.getElementById('eN').value);
+    save(LS.rules,RULES);document.getElementById('editModal').classList.remove('show');
+    toast('💾 保存!');renderRules();renderHome()};
+  document.getElementById('editModal').classList.add('show');
+}
+function renderNrParams(){
+  const k=document.getElementById('nrKind').value,el=document.getElementById('nrParams');
+  if(k==='weekly')el.innerHTML=`<div class="dayck" id="nrDays">${DOW.map((n,i)=>`<span data-d="${i}">${n}</span>`).join('')}</div>`;
+  if(k==='monthlyNth')el.innerHTML=`<div style="display:flex;gap:6px"><select id="nrNth">${[1,2,3,4].map(n=>`<option>${n}</option>`).join('')}</select><select id="nrDow">${DOW.map((n,i)=>`<option value="${i}">${n}曜</option>`).join('')}</select></div>`;
+  if(k==='everyN')el.innerHTML=`<input id="nrN" type="number" placeholder="何日ごと" min="1" value="2">`;
+  if(document.getElementById('nrDays'))document.querySelectorAll('#nrDays span').forEach(s=>s.onclick=()=>s.classList.toggle('on'));
+}
+document.getElementById('nrKind').onchange=renderNrParams;renderNrParams();
+function addRule(){
+  const name=document.getElementById('nrName').value.trim();if(!name)return toast('😵 名前を');
+  const kind=document.getElementById('nrKind').value;
+  const r={id:'c'+Date.now(),name,kind:kind==='everyN'?'everyN':kind,time:document.getElementById('nrTime').value.trim(),
+    link:document.getElementById('nrLink').value.trim(),cat:document.getElementById('nrCat').value,on:true,custom:true};
+  if(kind==='weekly'){r.days=[...document.querySelectorAll('#nrDays span.on')].map(s=>+s.dataset.d);if(!r.days.length)return toast('😵 曜日を')}
+  if(kind==='monthlyNth'){r.nth=+document.getElementById('nrNth').value;r.dow=+document.getElementById('nrDow').value}
+  if(kind==='everyN'){r.n=Math.max(1,+document.getElementById('nrN').value);r.anchor=today()}
+  RULES.push(r);save(LS.rules,RULES);document.getElementById('nrName').value='';
+  toast('🔁 登録!');renderRules();renderHome();
+}
+
+/* ---------- 📬 朝の収穫 ---------- */
+let harvestRows=[];
+function openHarvest(force){
+  if(!force&&load(LS.harvest,'')===today())return;
+  const box=document.getElementById('harvestBox');
+  if(!load(LS.slackWait,false)){
+    box.innerHTML=`<h3>📬 おはよう!まずSlackチェック!</h3>
+    <p>Slackのアクティビティ(メンション)を確認してきてください。戻ってきたら収穫入力モードになります。</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn pink" onclick="goSlack()">💬 Slackを開く</button>
+    <button class="btn" onclick="harvestInput()">スキップして入力へ</button>
+    <button class="btn" onclick="closeHarvest(true)">今日は収穫なし</button></div>`;
+  }else harvestInput();
+  document.getElementById('harvestModal').classList.add('show');
+}
+function goSlack(){save(LS.slackWait,true);window.open('https://app.slack.com','_blank')}
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden&&load(LS.slackWait,false)){save(LS.slackWait,false);harvestInput();document.getElementById('harvestModal').classList.add('show')}});
+function harvestInput(){
+  save(LS.slackWait,false);
+  if(!harvestRows.length)harvestRows=[{}];
+  const box=document.getElementById('harvestBox');
+  box.innerHTML=`<h3>🧺 収穫入力(雑多タスクへ)</h3>
+  <p>Slackで見つけた予定を入れてください。内容かURLどちらか片方でOK!</p>
+  <div id="hRows">${harvestRows.map((r,i)=>`<div class="hrow">
+    <input placeholder="内容" value="${esc(r.t||'')}" data-i="${i}" data-f="t">
+    <input placeholder="URL" value="${esc(r.u||'')}" data-i="${i}" data-f="u">
+    <input type="date" value="${r.d||''}" data-i="${i}" data-f="d"></div>`).join('')}</div>
+  <button class="btn sm" onclick="hAdd()">＋行を追加</button>
+  <p style="margin-top:12px">長期もの(本格登録):
+  <button class="btn sm" onclick="hStub()">📝テスト</button><button class="btn sm" onclick="hStub()">🏆大会/研究</button>
+  <button class="btn sm" onclick="hStub()">🎮遊び/勉強会</button><button class="btn sm" onclick="hStub()">🗣面談</button></p>
+  <div style="display:flex;gap:8px;margin-top:10px">
+  <button class="btn pink" onclick="hSubmit()">✅ 全部登録して閉じる</button>
+  <button class="btn" onclick="closeHarvest(true)">収穫なし/閉じる</button></div>`;
+  box.querySelectorAll('#hRows input').forEach(inp=>inp.oninput=()=>{harvestRows[+inp.dataset.i][inp.dataset.f]=inp.value});
+}
+function hAdd(){harvestRows.push({});harvestInput()}
+function hStub(){toast('🚧 本格登録フォームはパート3で実装!今は行に書いて雑多へどうぞ')}
+function hSubmit(){
+  let n=0;
+  harvestRows.forEach(r=>{if((r.t||r.u)&&r.d){ZATSU.push({id:Date.now()+''+Math.random(),title:r.t||'',url:r.u||'',date:r.d,created:today(),done:false});n++}});
+  save(LS.zatsu,ZATSU);harvestRows=[];closeHarvest(true);
+  toast(n?`🧺 ${n}件を雑多タスクに登録!`:'登録なしで閉じました');renderZatsu();renderHome();
+}
+function closeHarvest(mark){if(mark)save(LS.harvest,today());save(LS.slackWait,false);document.getElementById('harvestModal').classList.remove('show')}
+
+/* ---------- 起動 ---------- */
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.pane').forEach(x=>x.classList.remove('on'));
+  t.classList.add('on');document.getElementById(t.dataset.p).classList.add('on')});
+document.getElementById('zDate').value=today();
+renderHome();renderZatsu();renderRules();
+setTimeout(()=>openHarvest(false),600);
+</script>
+</body>
+</html>
