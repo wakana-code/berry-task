@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🍓 BerryTask v0.5.4</title>
+<title>🍓 BerryTask v0.5.5</title>
 <style>
 *{margin:0;box-sizing:border-box}
 body{font-family:'Segoe UI','Hiragino Sans',sans-serif;background:#16141c;color:#e8e2ee;min-height:100vh}
@@ -703,7 +703,12 @@ function renderMypro(){
   if(!list.length){g.innerHTML='<div class="empty">なし!上の➕から作ろう</div>';return}
   list.forEach(p=>g.appendChild(projCard(p)));
 }
-function loadThumb(p){if(p.hasImg)imgGet(p.id).then(b=>{const t=document.getElementById('th_'+p.id);if(b&&t){t.style.backgroundImage=`url(${URL.createObjectURL(b)})`;t.textContent=''}})}
+function loadThumb(p){if(p.hasImg)imgGet(p.id).then(b=>{
+  if(!b)return;
+  /* ★全画面+一覧で同idが複数存在しうるので、全部に貼る */
+  document.querySelectorAll(`[id="th_${p.id}"]`).forEach(t=>{
+    t.style.backgroundImage=`url(${URL.createObjectURL(b)})`;t.textContent=''});
+})}
 let FS=null;
 function openFs(id){FS=id;document.getElementById('fsWrap').classList.add('show');renderFs()}
 function closeFs(){FS=null;document.getElementById('fsWrap').classList.remove('show');renderMypro()}
