@@ -3,16 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🍓 BerryTask v0.1</title>
+<title>🍓 BerryTask v0.2</title>
 <style>
 *{margin:0;box-sizing:border-box}
 body{font-family:'Segoe UI','Hiragino Sans',sans-serif;background:#16141c;color:#e8e2ee;min-height:100vh}
 header{display:flex;align-items:center;gap:12px;padding:12px 18px;background:#211d2b;border-bottom:1px solid #322c40}
 header .logo{font-size:20px;font-weight:bold;color:#ff9eb5}
 header .sub{font-size:11px;color:#776b85}
-#tabs{display:flex;gap:4px;padding:10px 14px 0;background:#1b1824}
-.tab{padding:9px 16px;border:none;border-radius:10px 10px 0 0;background:#242030;color:#998aa8;cursor:pointer;font-size:14px}
-.tab.on{background:#2e2940;color:#fff;font-weight:bold}
+#tabs{display:flex;gap:4px;padding:10px 14px 0;background:#1b1824;flex-wrap:wrap;align-items:flex-end}
+.tab{padding:8px 13px;border:none;border-radius:10px 10px 0 0;background:#242030;color:#998aa8;cursor:pointer;font-size:13px}
+.tab.big{font-size:15px;padding:10px 18px;color:#ffb9c9;border:1px solid #453d55;border-bottom:none;font-weight:bold}
+.tab.on{background:#2e2940;color:#fff}
+.tab.big.on{border-color:#ff9eb5;color:#ff9eb5}
 .pane{display:none;padding:16px;max-width:760px;margin:0 auto}
 .pane.on{display:block}
 .card{background:#211d2b;border:1px solid #322c40;border-radius:14px;padding:16px;margin-bottom:14px}
@@ -21,23 +23,25 @@ header .sub{font-size:11px;color:#776b85}
 .btn:hover{background:#453d55}
 .btn.pink{background:linear-gradient(135deg,#ff9eb5,#e0709a);color:#2b1520;font-weight:bold}
 .btn.sm{padding:5px 10px;font-size:12px}
+.start{border:none;border-radius:10px;background:linear-gradient(135deg,#8fc7ff,#5a9ae0);color:#0e1a2b;font-weight:bold;padding:10px 18px;cursor:pointer;font-size:13.5px;white-space:nowrap}
+.start:hover{filter:brightness(1.1)}
 input,select,textarea{padding:9px 12px;border-radius:9px;border:1px solid #3a3348;background:#17141f;color:#eee;font-size:13px;outline:none}
-input:focus,select:focus,textarea:focus{border-color:#ff9eb5}
+input:focus,select:focus{border-color:#ff9eb5}
 #dayChips{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px}
 .chip{padding:8px 13px;border-radius:12px;background:#242030;color:#998aa8;cursor:pointer;font-size:12.5px;white-space:nowrap;border:1px solid transparent;text-align:center;line-height:1.5}
 .chip.on{background:#2e2940;color:#ff9eb5;border-color:#ff9eb5;font-weight:bold}
 .chip small{display:block;font-size:10px;opacity:.7}
-.task{display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid #322c40;border-radius:12px;margin-bottom:8px;background:#1d1a26}
+.task{display:flex;align-items:center;gap:9px;padding:11px 14px;border:1px solid #322c40;border-radius:12px;margin-bottom:8px;background:#1d1a26;flex-wrap:wrap}
 .task.done{opacity:.45}
 .task.done .tt{text-decoration:line-through}
 .task.warn{border-color:#c9a542;background:#26221a}
 .task.late{border-color:#c05656;background:#2a1c1e}
 .task .time{font-size:11.5px;color:#8fc7ff;min-width:44px;font-family:Consolas,monospace}
-.task .tt{flex:1;font-size:13.5px;line-height:1.5}
+.task .tt{flex:1;font-size:13.5px;line-height:1.5;min-width:150px}
 .task .tt small{display:block;font-size:11px;color:#9b8dae}
 .task .badge{font-size:10px;padding:2px 8px;border-radius:8px;background:#2e2940;color:#c9b3e8;white-space:nowrap}
-.task a{color:#8fc7ff;text-decoration:none;font-size:12px;background:#242030;padding:5px 10px;border-radius:8px;white-space:nowrap}
 .task .ok{border:none;background:#243a2c;color:#8fd8a0;border-radius:8px;padding:6px 11px;cursor:pointer;font-size:12.5px}
+.task .rej{border:none;background:#3a2430;color:#ff9d9d;border-radius:8px;padding:6px 11px;cursor:pointer;font-size:12.5px}
 .rule{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #322c40;border-radius:11px;margin-bottom:7px;font-size:13px;flex-wrap:wrap}
 .rule .nm{flex:1;min-width:140px}
 .rule .nm small{display:block;color:#776b85;font-size:11px}
@@ -48,29 +52,37 @@ input:focus,select:focus,textarea:focus{border-color:#ff9eb5}
 .sw.on::after{left:20px;background:#fff}
 .modal{position:fixed;inset:0;background:rgba(10,7,14,.8);display:none;align-items:center;justify-content:center;z-index:50;padding:14px}
 .modal.show{display:flex}
+#formModal{z-index:70}
 .mbox{background:#211d2b;border:1px solid #453d55;border-radius:16px;padding:20px;width:min(560px,95vw);max-height:88vh;overflow-y:auto}
 .mbox h3{color:#ff9eb5;font-size:16px;margin-bottom:12px}
 .mbox p{font-size:13px;color:#c9bfd6;line-height:1.8;margin-bottom:12px}
-.hrow{display:flex;gap:6px;margin-bottom:7px;flex-wrap:wrap}
-.hrow input{flex:1;min-width:90px}
+.hrow,.mrow{display:flex;gap:6px;margin-bottom:7px;flex-wrap:wrap}
+.hrow input,.mrow input{flex:1;min-width:80px}
 .form{display:flex;flex-direction:column;gap:8px;margin-top:10px}
-.form label{font-size:12px;color:#9b8dae}
+.form label{font-size:12px;color:#9b8dae;margin-top:4px}
 .dayck{display:flex;gap:5px;flex-wrap:wrap}
 .dayck span{padding:6px 11px;border-radius:9px;background:#242030;cursor:pointer;font-size:12.5px;border:1px solid transparent}
 .dayck span.on{background:#2e2940;color:#ff9eb5;border-color:#ff9eb5}
+.choice{display:block;width:100%;text-align:left;padding:14px 16px;margin-bottom:9px;border:1px solid #322c40;border-radius:13px;background:#241f31;color:#e8e2ee;cursor:pointer;font-size:14px}
+.choice:hover{border-color:#ff9eb5}
+.choice small{display:block;color:#9b8dae;font-size:11.5px;margin-top:3px}
 #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#2e2940;padding:10px 24px;border-radius:20px;font-size:13px;opacity:0;transition:.3s;pointer-events:none;z-index:99;border:1px solid #453d55}
 #toast.show{opacity:1}
-.empty{text-align:center;color:#665a75;font-size:13px;padding:30px 0}
+.empty{text-align:center;color:#665a75;font-size:13px;padding:26px 0}
 .hint{font-size:11.5px;color:#8d7a99;line-height:1.7;margin-top:8px}
 </style>
 </head>
 <body>
-<header><span class="logo">🍓 BerryTask</span><span class="sub">v0.1 — きみの秘書</span>
+<header><span class="logo">🍓 BerryTask</span><span class="sub">v0.2 — きみの秘書</span>
 <button class="btn sm" style="margin-left:auto" onclick="openHarvest(true)">📬 Slack収穫</button></header>
 <div id="tabs">
-<button class="tab on" data-p="homePane">🏠 ホーム</button>
-<button class="tab" data-p="zatsuPane">📥 雑多</button>
-<button class="tab" data-p="setPane">⚙️ 設定</button>
+<button class="tab big on" data-p="homePane">🏠 ホーム</button>
+<button class="tab big" data-p="newPane">➕ 新規</button>
+<button class="tab" data-p="myproPane">📁 マイプロ</button>
+<button class="tab" data-p="goalPane">🎯 月次目標</button>
+<button class="tab" data-p="longPane">📅 長期</button>
+<button class="tab" data-p="tanPane">📥 単発</button>
+<button class="tab big" data-p="setPane">⚙️ 既存</button>
 </div>
 
 <div class="pane on" id="homePane">
@@ -78,16 +90,32 @@ input:focus,select:focus,textarea:focus{border-color:#ff9eb5}
 <div class="card"><h2 id="dayTitle">今日のタスク</h2><div id="taskList"></div></div>
 </div>
 
-<div class="pane" id="zatsuPane">
-<div class="card"><h2>➕ 雑多タスク追加</h2>
-<div class="hrow"><input id="zTitle" placeholder="内容"><input id="zUrl" placeholder="URL(任意)"><input type="date" id="zDate"></div>
-<button class="btn pink" onclick="addZatsu()">追加</button>
-<p class="hint">期限まで毎日表示 / 前日は🟡 / 超過は🔴で出続けます</p></div>
-<div class="card"><h2>📋 雑多タスク一覧</h2><div id="zList"></div></div>
+<div class="pane" id="newPane">
+<div class="card"><h2>⚡ 単発をサッと追加</h2>
+<div class="hrow"><input id="zTitle" placeholder="内容"><input id="zUrl" placeholder="URL(任意)"><input id="zDate" placeholder="7/23" style="max-width:100px"></div>
+<button class="btn pink" onclick="addZatsu()">📥 追加</button>
+<p class="hint">日付は「7/23」でOK(過去日なら来年扱い)。期限まで毎日表示/前日🟡/超過🔴</p></div>
+<div class="card"><h2>🗂 種類から登録</h2>
+<button class="choice" onclick="openForm('test')">📝 テスト<small>クラス替え/ミニテスト/模試 — 教科ローテ自動割り振り</small></button>
+<button class="choice" onclick="openForm('comp')">🏆 大会/研究<small>本番締切+副次締切+マイルストーン+週xコミット</small></button>
+<button class="choice" onclick="openForm('play')">🎮 遊び/勉強会/イベント<small>日付と時間を選んで登録</small></button>
+<button class="choice" onclick="openForm('meet')">🗣 面談<small>日付と時間を選んで登録</small></button>
+<button class="choice" onclick="openGoalRegCurrent()">🎯 月次目標<small>[人間関係]と[実績]の目標を登録</small></button>
+</div>
 </div>
 
+<div class="pane" id="myproPane"><div class="card"><h2>📁 マイプロ</h2><div class="empty">🚧 次パートで実装!<br>(画像サムネ+URL+記録+グループ分けのプロジェクト管理ページ)</div></div></div>
+
+<div class="pane" id="goalPane"><div class="card"><h2>🎯 月次目標</h2><div id="goalList"></div>
+<button class="btn pink" style="margin-top:8px" onclick="openGoalRegCurrent()">📝 登録/追加</button></div></div>
+
+<div class="pane" id="longPane"><div class="card"><h2>📅 長期タスク一覧</h2><div id="longList"></div></div></div>
+
+<div class="pane" id="tanPane"><div class="card"><h2>📥 単発タスク一覧</h2><div id="zList"></div>
+<p class="hint">追加は➕新規タブから</p></div></div>
+
 <div class="pane" id="setPane">
-<div class="card"><h2>🔁 ルーティン一覧(ON/OFF・編集)</h2><div id="ruleList"></div></div>
+<div class="card"><h2>🔁 既存ルーティン(ON/OFF・編集)</h2><div id="ruleList"></div></div>
 <div class="card"><h2>➕ 新規ルーティン</h2>
 <div class="form">
 <input id="nrName" placeholder="名前">
@@ -100,11 +128,12 @@ input:focus,select:focus,textarea:focus{border-color:#ff9eb5}
 
 <div class="modal" id="harvestModal"><div class="mbox" id="harvestBox"></div></div>
 <div class="modal" id="editModal"><div class="mbox" id="editBox"></div></div>
+<div class="modal" id="formModal"><div class="mbox" id="formBox"></div></div>
 <div id="toast"></div>
 
 <script>
-/* ===== 🍓 BerryTask v0.1 — コアエンジン ===== */
-const LS={rules:'bt_rules',done:'bt_done',zatsu:'bt_zatsu',harvest:'bt_lastHarvest',cycle:'bt_reportCycle',slackWait:'bt_slackWait'};
+/* ===== 🍓 BerryTask v0.2 ===== */
+const LS={rules:'bt_rules',done:'bt_done',zatsu:'bt_zatsu',harvest:'bt_lastHarvest',cycle:'bt_reportCycle',slackWait:'bt_slackWait',long:'bt_long',goals:'bt_goals'};
 const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
 const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const DOW=['日','月','火','水','木','金','土'];
@@ -114,12 +143,23 @@ const addD=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
 const today=()=>fmt(new Date());
 const hash=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))|0;return Math.abs(h)};
 function nthDow(y,m,nth,dow){const first=new Date(y,m,1);const off=(dow-first.getDay()+7)%7;return new Date(y,m,1+off+(nth-1)*7)}
-const toast=m=>{const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000)};
+const toast=m=>{const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3200)};
+const esc=s=>{const d=document.createElement('div');d.textContent=s??'';return d.innerHTML};
+/* ★「7/23」クイック日付パース */
+function qd(s){
+  s=(s||'').trim();if(!s)return'';
+  let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if(m)return fmt(new Date(+m[1],+m[2]-1,+m[3]));
+  m=s.match(/^(\d{1,2})[\/\-月](\d{1,2})日?$/);
+  if(m){const y=new Date().getFullYear();let d=new Date(y,+m[1]-1,+m[2]);
+    if(fmt(d)<today())d=new Date(y+1,+m[1]-1,+m[2]);return fmt(d)}
+  return'';
+}
 
-/* ---------- 初期ルーティン ---------- */
+/* ---------- 初期ルーティン(v0.1と同じ) ---------- */
 const SEED=[
 {id:'report',name:'月次レポート(1.5h)',kind:'report',days:[3,6,0],time:'',link:'https://www.nnn.ed.nico/my_course',cat:'勉強',on:true},
-{id:'hread',name:'Hリードテスト',kind:'hread',time:'',link:'',cat:'勉強',on:true,note:'リンクは設定からSlackチャンネルURLを'},
+{id:'hread',name:'Hリードテスト',kind:'hread',time:'',link:'',cat:'勉強',on:true,note:'リンクは編集からSlackチャンネルURLを'},
 {id:'info_meet',name:'研究部情報定例会',kind:'monthlyNth',nth:2,dow:3,time:'19:00',link:'',cat:'実績',on:false,note:'現在ステルス中'},
 {id:'ken_meet',name:'研究部定例会',kind:'monthlyNth',nth:4,dow:3,time:'19:00-21:00',link:'',cat:'実績',on:true},
 {id:'miki',name:'研究部miki面談',kind:'monthlyNth',nth:3,dow:4,time:'11:00-11:50',link:'',cat:'実績',on:true},
@@ -135,16 +175,19 @@ const SEED=[
 {id:'disco',name:'Discord返信',kind:'weekly',days:[0,1,2,3,4,5,6],time:'',link:'https://discord.com/channels/@me',cat:'人間関係',on:true},
 {id:'line',name:'LINE返信',kind:'weekly',days:[0,1,2,3,4,5,6],time:'',link:'https://line.me',cat:'人間関係',on:true},
 {id:'slowly',name:'Slowly返信',kind:'everyN',n:2,anchor:'2026-01-01',time:'',link:'https://web.slowly.app',cat:'人間関係',on:true,slowly:true},
-{id:'gmail',name:'Gmail返信(2件)',kind:'everyN',n:2,anchor:'2026-01-02',time:'',link:'',cat:'人間関係',on:true,note:'リンクは設定からGmail検索URLを'}
+{id:'gmail',name:'Gmail返信(2件)',kind:'everyN',n:2,anchor:'2026-01-02',time:'',link:'',cat:'人間関係',on:true,note:'リンクは編集からGmail検索URLを'}
 ];
-let RULES=load(LS.rules,null);
-if(!RULES){RULES=SEED;save(LS.rules,RULES)}
-let DONE=load(LS.done,{}),ZATSU=load(LS.zatsu,[]),CYCLE=load(LS.cycle,{});
+let RULES=load(LS.rules,null);if(!RULES){RULES=SEED;save(LS.rules,RULES)}
+let DONE=load(LS.done,{}),ZATSU=load(LS.zatsu,[]),CYCLE=load(LS.cycle,{}),LONG=load(LS.long,[]),GOALS=load(LS.goals,{});
 let selDate=today();
+const mkeyOf=ds=>{const d=parse(ds);return d.getFullYear()+'-'+d.getMonth()};
+const nextMK=k=>{let[y,m]=k.split('-').map(Number);m++;if(m>11){m=0;y++}return y+'-'+m};
+const mkLabel=k=>{const[y,m]=k.split('-').map(Number);return`${y}年${m+1}月`};
 
 /* ---------- エンジン ---------- */
 function reportCycle(ds){const d=parse(ds);return d.getDate()<=15?`${d.getFullYear()}-${d.getMonth()}`:`${d.getFullYear()}-${d.getMonth()+1}`}
-function hreadDays(y,m){const t1=nthDow(y,m,1,4);return{start:t1,eng:addD(t1,2),mj:addD(t1,3),dead:addD(t1,7),end:addD(t1,8)}}
+function hreadDays(y,m){const t1=nthDow(y,m,1,4);return{eng:addD(t1,2),mj:addD(t1,3),dead:addD(t1,7),end:addD(t1,8)}}
+function mk(r,ds,title,o){return{key:`${r.id}|${ds}|${o.key||''}`,title,sub:o.sub||'',link:r.link,time:r.time||'',cat:r.cat,extra:o.extra,rid:r.id,ds}}
 function tasksFor(ds){
   const d=parse(ds),y=d.getFullYear(),m=d.getMonth(),dow=d.getDay(),out=[];
   const hr=hreadDays(y,m);
@@ -153,22 +196,20 @@ function tasksFor(ds){
     if(r.kind==='report'){
       if(CYCLE[reportCycle(ds)])continue;
       if(ds===fmt(hr.eng)||ds===fmt(hr.mj))continue;
-      if(r.days.includes(dow)){const cy=reportCycle(ds);const[cyY,cyM]=cy.split('-').map(Number);
+      if(r.days.includes(dow)){const cy=reportCycle(ds),cyM=+cy.split('-')[1];
         out.push(mk(r,ds,r.name,{sub:`締切: ${cyM+1}/15`,extra:'cycle'}))}
     }else if(r.kind==='hread'){
       if(ds===fmt(hr.eng))out.push(mk(r,ds,'Hリードテスト[英語]',{}));
       if(ds===fmt(hr.mj))out.push(mk(r,ds,'Hリードテスト[数学/国語]',{}));
       if(ds===fmt(hr.dead))out.push(mk(r,ds,'Hリード締切(余裕日)',{sub:`実期限: ${fmt(hr.end).slice(5)}`}));
     }else if(r.kind==='weekly'){
-      if(r.days.includes(dow))out.push(mk(r,ds,r.name,{slowlyCount:r.slowly}));
+      if(r.days.includes(dow))out.push(mk(r,ds,r.name,{}));
       (r.derive||[]).forEach(dv=>{const tgt=addD(d,-dv.off);if(r.days.includes(tgt.getDay()))out.push(mk(r,ds,dv.label,{key:dv.label}))});
     }else if(r.kind==='monthlyNth'){
       if(ds===fmt(nthDow(y,m,r.nth,r.dow)))out.push(mk(r,ds,r.name,{}));
     }else if(r.kind==='everyN'){
       const diff=Math.round((d-parse(r.anchor))/864e5);
-      if(diff>=0&&diff%r.n===0){let nm=r.name;
-        if(r.slowly)nm=`Slowly返信(${2+hash(ds)%3}人)`;
-        out.push(mk(r,ds,nm,{}))}
+      if(diff>=0&&diff%r.n===0){let nm=r.name;if(r.slowly)nm=`Slowly返信(${2+hash(ds)%3}人)`;out.push(mk(r,ds,nm,{}))}
     }else if(r.kind==='juku'){
       const sub=r.name.replace('塾:','');
       if(dow===r.day)out.push(mk(r,ds,`${sub} 授業`,{}));
@@ -177,20 +218,50 @@ function tasksFor(ds){
       if((r.day-dow+7)%7===1)out.push(mk(r,ds,`${sub} 復習(見直し)`,{key:'rev2'}));
     }
   }
-  /* 雑多 */
+  /* 長期 */
+  for(const l of LONG){
+    if(l.off)continue;
+    (l.subs||[]).forEach(sd=>{if(sd.date===ds)out.push({key:`Ls${l.id}|${sd.date}|${sd.label}`,title:`📌 ${l.name}: ${sd.label}`,sub:'副次締切',time:'',cat:l.cat,link:l.link})});
+    (l.miles||[]).forEach(ms=>{if(ms.date===ds)out.push({key:`Lm${l.id}|${ms.date}|${ms.label}`,title:`🚩 ${l.name}: ${ms.label}`,sub:'マイルストーン',time:'',cat:l.cat,link:l.link})});
+    if(l.mainDate===ds)out.push({key:`LM${l.id}|${ds}`,title:`🏁 ${l.name} ${l.typ==='test'?'実施日':'本番'}`,sub:'',time:l.time||'',cat:l.cat,link:l.link});
+    if(l.perWeek&&(l.pw||[]).length&&ds>=l.start&&l.end&&ds<l.end&&l.pw.includes(dow)){
+      let idx=0;for(let dd=parse(l.start);fmt(dd)<ds;dd=addD(dd,1))if(l.pw.includes(dd.getDay()))idx++;
+      const c=(l.contents||[]).length?l.contents[idx%l.contents.length]:'';
+      const nx=[...(l.miles||[]).map(x=>({lb:'🚩'+x.label,dt:x.date})),{lb:l.typ==='test'?'🏁実施':'🏁本番',dt:l.mainDate}].filter(x=>x.dt&&x.dt>=ds).sort((a,b)=>a.dt<b.dt?-1:1);
+      out.push({key:`Lc${l.id}|${ds}`,title:`${l.name}${c?': '+c:''}`,sub:nx.slice(0,2).map(x=>`${x.lb} ${x.dt.slice(5)}`).join(' / '),time:'',cat:l.cat,link:l.link});
+    }
+  }
+  /* 月次目標 */
+  const gk=mkeyOf(ds),g=GOALS[gk];
+  if(g)g.items.forEach(it=>{
+    if(it.done)return;
+    if(it.date===ds||(ds===today()&&it.date<today()))
+      out.push({key:'g_'+it.id,goal:it.id,title:`🎯 ${it.text}`,sub:`月次目標[${it.cat}]`,time:'',cat:it.cat});
+  });
+  if(ds===today()){
+    if(!GOALS[gk])out.push({key:'greg_'+gk,greg:gk,title:'📝 今月の月次目標を登録!',sub:'',time:'',cat:'実績'});
+    else if(g.items.length&&g.items.every(x=>x.done)&&!GOALS[nextMK(gk)])
+      out.push({key:'greg_'+nextMK(gk),greg:nextMK(gk),title:'📝 来月の月次目標を登録!',sub:'今月全達成🎉',time:'',cat:'実績'});
+  }
+  /* 単発 */
   for(const z of ZATSU){
     if(z.done)continue;
-    const due=z.date;
-    if(ds>=z.created&&ds<=due||ds===today()&&due<today()){
-      let cls='';if(due<ds||due<today()&&ds===today())cls='late';else if(addD(parse(ds),1)>parse(due))cls='warn';
-      out.push({key:'z_'+z.id,title:z.title||z.url,sub:`期限: ${due.slice(5)}`,link:z.url,time:'',cat:'雑多',cls,zid:z.id});
+    if(z.ev){if(z.date===ds)out.push({key:'z_'+z.id,title:z.title||z.url,sub:z.typ||'',link:z.url,time:z.time||'',cat:z.cat||'趣味',zid:z.id});continue}
+    if((ds>=z.created&&ds<=z.date)||(ds===today()&&z.date<today())){
+      let cls='';if(z.date<ds||(z.date<today()&&ds===today()))cls='late';else if(addD(parse(ds),1)>parse(z.date))cls='warn';
+      out.push({key:'z_'+z.id,title:z.title||z.url,sub:`期限: ${z.date.slice(5)}`,link:z.url,time:'',cat:'単発',cls,zid:z.id});
     }
   }
   return out.sort((a,b)=>(a.time||'99')<(b.time||'99')?-1:1);
 }
-function mk(r,ds,title,o){return{key:`${r.id}|${ds}|${o.key||''}`,title,sub:o.sub||'',link:r.link,time:r.time||'',cat:r.cat,extra:o.extra,rid:r.id,ds}}
+/* 週x日の負荷分散割り当て */
+function pickDays(x){
+  const loadMap=[0,0,0,0,0,0,0];
+  for(let i=0;i<14;i++){const ds=fmt(addD(new Date(),i));loadMap[parse(ds).getDay()]+=tasksFor(ds).length}
+  return[...Array(7).keys()].sort((a,b)=>loadMap[a]-loadMap[b]).slice(0,Math.min(x,7)).sort();
+}
 
-/* ---------- ホーム描画 ---------- */
+/* ---------- ホーム ---------- */
 function renderChips(){
   const el=document.getElementById('dayChips');el.innerHTML='';
   for(let i=0;i<8;i++){const d=addD(new Date(),i),ds=fmt(d);
@@ -209,40 +280,180 @@ function renderHome(){
     const done=DONE[t.key];
     const el=document.createElement('div');el.className='task'+(done?' done':'')+(t.cls?' '+t.cls:'');
     el.innerHTML=`<span class="time">${t.time||'--:--'}</span><span class="tt">${esc(t.title)}${t.sub?`<small>${esc(t.sub)}</small>`:''}</span><span class="badge">${t.cat}</span>`;
-    if(t.link){const a=document.createElement('a');a.href=t.link;a.target='_blank';a.textContent='🔗';el.appendChild(a)}
+    if(t.link&&!done){const s=document.createElement('button');s.className='start';s.textContent='▶ START';
+      s.onclick=()=>window.open(t.link,'_blank');el.appendChild(s)}
+    if(t.greg){const b=document.createElement('button');b.className='start';b.textContent='📝 登録する';
+      b.onclick=()=>openGoalReg(t.greg);el.appendChild(b);list.appendChild(el);return}
+    if(t.goal){
+      const ok=document.createElement('button');ok.className='ok';ok.textContent='✅ 達成';
+      ok.onclick=()=>goalDone(t.goal);el.appendChild(ok);
+      const rj=document.createElement('button');rj.className='rej';rj.textContent='❌ 今日は無理';
+      rj.onclick=()=>goalReject(t.goal);el.appendChild(rj);
+      list.appendChild(el);return}
     const b=document.createElement('button');b.className='ok';b.textContent=done?'↩':'✅';
-    b.onclick=()=>{if(t.zid){const z=ZATSU.find(x=>x.id===t.zid);z.done=!z.done;save(LS.zatsu,ZATSU)}else{DONE[t.key]=!done;save(LS.done,DONE)}renderHome();renderZatsu()};
+    b.onclick=()=>{if(t.zid){const z=ZATSU.find(x=>x.id===t.zid);z.done=!z.done;save(LS.zatsu,ZATSU)}else{DONE[t.key]=!done;save(LS.done,DONE)}renderAll()};
     el.appendChild(b);
-    if(t.extra==='cycle'&&!done){const fin=document.createElement('button');fin.className='ok';fin.textContent='🏁 今月分完了';fin.style.fontSize='11px';
-      fin.onclick=()=>{CYCLE[reportCycle(t.ds)]=true;save(LS.cycle,CYCLE);toast('🏁 今月のレポート完了!15日過ぎに復活します');renderHome()};
-      el.appendChild(fin)}
+    if(t.extra==='cycle'&&!done){const fin=document.createElement('button');fin.className='ok';fin.style.fontSize='11px';fin.textContent='🏁 今月分完了';
+      fin.onclick=()=>{CYCLE[reportCycle(t.ds)]=true;save(LS.cycle,CYCLE);toast('🏁 今月のレポート完了!');renderHome()};el.appendChild(fin)}
     list.appendChild(el)});
 }
-const esc=s=>{const d=document.createElement('div');d.textContent=s??'';return d.innerHTML};
 
-/* ---------- 雑多 ---------- */
+/* ---------- 単発 ---------- */
 function addZatsu(){
-  const t=document.getElementById('zTitle').value.trim(),u=document.getElementById('zUrl').value.trim(),dt=document.getElementById('zDate').value;
-  if(!t&&!u)return toast('😵 内容かURLを');if(!dt)return toast('😵 日付を');
+  const t=document.getElementById('zTitle').value.trim(),u=document.getElementById('zUrl').value.trim(),dt=qd(document.getElementById('zDate').value);
+  if(!t&&!u)return toast('😵 内容かURLを');if(!dt)return toast('😵 日付が読めません(7/23形式)');
   ZATSU.push({id:Date.now()+''+Math.random(),title:t,url:u,date:dt,created:today(),done:false});
-  save(LS.zatsu,ZATSU);document.getElementById('zTitle').value='';document.getElementById('zUrl').value='';
-  toast('📥 追加!');renderZatsu();renderHome();
+  save(LS.zatsu,ZATSU);document.getElementById('zTitle').value='';document.getElementById('zUrl').value='';document.getElementById('zDate').value='';
+  toast(`📥 追加!(${dt.slice(5)}期限)`);renderAll();
 }
 function renderZatsu(){
   const el=document.getElementById('zList');el.innerHTML='';
   if(!ZATSU.length){el.innerHTML='<div class="empty">なし</div>';return}
   [...ZATSU].sort((a,b)=>a.date<b.date?-1:1).forEach(z=>{
     const d=document.createElement('div');d.className='task'+(z.done?' done':'')+(z.date<today()&&!z.done?' late':'');
-    d.innerHTML=`<span class="time">${z.date.slice(5)}</span><span class="tt">${esc(z.title||z.url)}</span>`;
-    if(z.url){const a=document.createElement('a');a.href=z.url;a.target='_blank';a.textContent='🔗';d.appendChild(a)}
+    d.innerHTML=`<span class="time">${z.date.slice(5)}${z.time?' '+z.time:''}</span><span class="tt">${esc(z.title||z.url)}${z.typ?`<small>${esc(z.typ)}</small>`:''}</span>`;
+    if(z.url){const s=document.createElement('button');s.className='start';s.style.padding='6px 12px';s.textContent='▶';s.onclick=()=>window.open(z.url,'_blank');d.appendChild(s)}
     const b=document.createElement('button');b.className='ok';b.textContent=z.done?'↩':'✅';
-    b.onclick=()=>{z.done=!z.done;save(LS.zatsu,ZATSU);renderZatsu();renderHome()};d.appendChild(b);
-    const del=document.createElement('button');del.className='ok';del.style.color='#ff9d9d';del.textContent='🗑';
-    del.onclick=()=>{ZATSU=ZATSU.filter(x=>x.id!==z.id);save(LS.zatsu,ZATSU);renderZatsu();renderHome()};d.appendChild(del);
+    b.onclick=()=>{z.done=!z.done;save(LS.zatsu,ZATSU);renderAll()};d.appendChild(b);
+    const del=document.createElement('button');del.className='rej';del.textContent='🗑';
+    del.onclick=()=>{ZATSU=ZATSU.filter(x=>x.id!==z.id);save(LS.zatsu,ZATSU);renderAll()};d.appendChild(del);
     el.appendChild(d)});
 }
 
-/* ---------- 設定 ---------- */
+/* ---------- 長期 ---------- */
+function renderLong(){
+  const el=document.getElementById('longList');el.innerHTML='';
+  if(!LONG.length){el.innerHTML='<div class="empty">なし(➕新規タブから登録)</div>';return}
+  LONG.forEach(l=>{
+    const d=document.createElement('div');d.className='rule'+(l.off?' off':'');
+    const typL={test:'📝テスト',comp:'🏆大会/研究'}[l.typ]||l.typ;
+    d.innerHTML=`<span class="nm">${esc(l.name)}<small>${typL} / 🏁${l.mainDate?l.mainDate.slice(5):'-'} / 週${l.perWeek||0}日[${(l.pw||[]).map(x=>DOW[x]).join('')}]${(l.miles||[]).length?` / 🚩${l.miles.length}個`:''}${(l.contents||[]).length?` / ${l.contents.join('→')}`:''}</small></span>`;
+    const sw=document.createElement('div');sw.className='sw'+(l.off?'':' on');
+    sw.onclick=()=>{l.off=!l.off;save(LS.long,LONG);renderAll()};d.appendChild(sw);
+    const del=document.createElement('button');del.className='btn sm';del.textContent='🗑';
+    del.onclick=()=>{if(confirm(`「${l.name}」を削除?`)){LONG=LONG.filter(x=>x.id!==l.id);save(LS.long,LONG);renderAll()}};d.appendChild(del);
+    el.appendChild(d)});
+}
+
+/* ---------- 月次目標 ---------- */
+function goalDone(id){
+  for(const k in GOALS){const it=GOALS[k].items.find(x=>x.id===id);
+    if(it){it.done=true;save(LS.goals,GOALS);renderAll();
+      if(GOALS[k].items.every(x=>x.done)&&!GOALS[nextMK(k)]){toast('🎉 全目標達成!来月分を登録しよう');openGoalReg(nextMK(k))}
+      return}}
+}
+function goalReject(id){
+  for(const k in GOALS){const it=GOALS[k].items.find(x=>x.id===id);
+    if(it){const[y,m]=k.split('-').map(Number);const last=new Date(y,m+1,0).getDate();
+      let min=mkeyOf(today())===k?parse(today()).getDate()+2:2;if(min>last)min=last;
+      const day=min+Math.floor(Math.random()*(last-min+1));
+      it.date=fmt(new Date(y,m,day));save(LS.goals,GOALS);
+      toast(`↪ ${m+1}/${day}に再出現します`);renderAll();return}}
+}
+function openGoalRegCurrent(){const k=mkeyOf(today());openGoalReg(GOALS[k]&&GOALS[k].items.every(x=>x.done)?nextMK(k):k)}
+function openGoalReg(k){
+  const box=document.getElementById('formBox');
+  const ex=GOALS[k]?GOALS[k].items.length:0;
+  box.innerHTML=`<h3>🎯 ${mkLabel(k)}の月次目標${ex?'(追加)':''}</h3>
+  <p>「〜を誘う」「マイプロ1個新規登録」など。1個ずついい感じの日に出現します。</p>
+  <div id="gRows"><div class="mrow"><select class="gc"><option>実績</option><option>人間関係</option></select><input class="gt" placeholder="目標"></div></div>
+  <button class="btn sm" onclick="gAddRow()">＋追加</button>
+  <div style="display:flex;gap:8px;margin-top:12px">
+  <button class="btn pink" onclick="gSave('${k}')">✅ 登録</button>
+  <button class="btn" onclick="closeForm()">やめる(後日また出ますw)</button></div>`;
+  document.getElementById('formModal').classList.add('show');
+}
+function gAddRow(){document.getElementById('gRows').insertAdjacentHTML('beforeend','<div class="mrow"><select class="gc"><option>実績</option><option>人間関係</option></select><input class="gt" placeholder="目標"></div>')}
+function gSave(k){
+  const rows=[...document.querySelectorAll('#gRows .mrow')].map(r=>({cat:r.querySelector('.gc').value,text:r.querySelector('.gt').value.trim()})).filter(r=>r.text);
+  if(!rows.length)return toast('😵 目標を書いてください');
+  const[y,m]=k.split('-').map(Number);const last=new Date(y,m+1,0).getDate();
+  if(!GOALS[k])GOALS[k]={items:[]};
+  const base=mkeyOf(today())===k?Math.min(parse(today()).getDate()+1,last):2;
+  rows.forEach((r,i)=>{const day=Math.min(base+i*2+hash(r.text)%2,last);
+    GOALS[k].items.push({id:'g'+Date.now()+i,cat:r.cat,text:r.text,date:fmt(new Date(y,m,day)),done:false})});
+  save(LS.goals,GOALS);closeForm();toast(`🎯 ${rows.length}個登録!早めの日に出現します`);renderAll();
+}
+function renderGoals(){
+  const el=document.getElementById('goalList');el.innerHTML='';
+  const ks=Object.keys(GOALS).sort((a,b)=>{const[ay,am]=a.split('-').map(Number),[by,bm]=b.split('-').map(Number);return(by*12+bm)-(ay*12+am)}).slice(0,3);
+  if(!ks.length){el.innerHTML='<div class="empty">まだ登録なし</div>';return}
+  ks.forEach(k=>{
+    el.insertAdjacentHTML('beforeend',`<div style="font-size:13px;color:#ffd3a3;margin:10px 0 6px">${mkLabel(k)}</div>`);
+    GOALS[k].items.forEach(it=>{
+      const d=document.createElement('div');d.className='task'+(it.done?' done':'');
+      d.innerHTML=`<span class="time">${it.date.slice(5)}</span><span class="tt">${esc(it.text)}</span><span class="badge">${it.cat}</span><span>${it.done?'✅':'⏳'}</span>`;
+      el.appendChild(d)})});
+}
+
+/* ---------- 登録フォーム(テスト/大会/遊び/面談) ---------- */
+const SUBJ=['英語','数学','数3','物理','化学','国語'];
+let formDone=null;
+function closeForm(){document.getElementById('formModal').classList.remove('show')}
+function openForm(type,onDone){
+  formDone=onDone||null;
+  const box=document.getElementById('formBox');
+  const mileRows=`<label>🚩 マイルストーン(任意)</label><div id="fMiles"></div><button class="btn sm" onclick="fRow('fMiles','内容','日付 7/23')">＋追加</button>`;
+  if(type==='test')box.innerHTML=`<h3>📝 テスト登録</h3><div class="form">
+    <select id="fSub"><option>模試</option><option>クラス替え(塾)</option><option>ミニテスト(塾)</option></select>
+    <input id="fName" placeholder="名前(任意 例:8月駿台)">
+    <label>実施日</label><input id="fMain" placeholder="7/23">
+    <label>教科(選んだ順にローテ)</label><div class="dayck" id="fTags">${SUBJ.map(s=>`<span>${s}</span>`).join('')}</div>
+    <label>週何日コミット?</label><input id="fPW" type="number" value="3" min="0" max="7">
+    ${mileRows}
+    <div style="display:flex;gap:8px;margin-top:10px"><button class="btn pink" onclick="fSaveTest()">✅ 登録</button><button class="btn" onclick="closeForm()">閉じる</button></div></div>`;
+  if(type==='comp')box.innerHTML=`<h3>🏆 大会/研究登録</h3><div class="form">
+    <input id="fName" placeholder="名前(例:物理チャレンジ)">
+    <label>🏁 本番/締切</label><input id="fMain" placeholder="7/23">
+    <label>📌 副次締切(応募フォーム/スライド等・任意)</label><div id="fSubs"></div><button class="btn sm" onclick="fRow('fSubs','内容','日付 7/23')">＋追加</button>
+    ${mileRows}
+    <label>週何日コミット?</label><input id="fPW" type="number" value="2" min="0" max="7">
+    <label>コミット内容ローテ(任意 例:実験→解析→執筆)</label><div id="fConts"></div><button class="btn sm" onclick="fRow('fConts','内容','')">＋追加</button>
+    <input id="fLink" placeholder="URL(任意)">
+    <div style="display:flex;gap:8px;margin-top:10px"><button class="btn pink" onclick="fSaveComp()">✅ 登録</button><button class="btn" onclick="closeForm()">閉じる</button></div></div>`;
+  if(type==='play'||type==='meet')box.innerHTML=`<h3>${type==='play'?'🎮 遊び/勉強会/イベント':'🗣 面談'}</h3><div class="form">
+    <input id="fName" placeholder="内容(例:〇〇と勉強会)">
+    <label>日付</label><input id="fMain" placeholder="7/23">
+    <label>時間</label><input id="fTime" list="times" placeholder="10:30(選択or手入力)">
+    <input id="fLink" placeholder="URL(任意)">
+    <div style="display:flex;gap:8px;margin-top:10px"><button class="btn pink" onclick="fSaveEv('${type}')">✅ 登録</button><button class="btn" onclick="closeForm()">閉じる</button></div></div>`;
+  if(document.getElementById('fTags'))document.querySelectorAll('#fTags span').forEach(s=>s.onclick=()=>s.classList.toggle('on'));
+  document.getElementById('formModal').classList.add('show');
+}
+function fRow(id,p1,p2){document.getElementById(id).insertAdjacentHTML('beforeend',`<div class="mrow"><input class="r1" placeholder="${p1}">${p2?`<input class="r2" placeholder="${p2}" style="max-width:110px">`:''}</div>`)}
+function readRows(id,needDate){return[...document.querySelectorAll(`#${id} .mrow`)].map(r=>{
+  const label=r.querySelector('.r1').value.trim(),d=r.querySelector('.r2');
+  return{label,date:d?qd(d.value):''}}).filter(r=>r.label&&(!needDate||r.date))}
+function finishLong(l){
+  l.end=[l.mainDate,...(l.miles||[]).map(x=>x.date)].filter(Boolean).sort().pop();
+  l.pw=l.perWeek?pickDays(l.perWeek):[];
+  LONG.push(l);save(LS.long,LONG);closeForm();
+  toast(`📅 登録!コミット曜日:[${l.pw.map(x=>DOW[x]).join('')}](負荷が軽い曜日に自動配置)`);
+  renderAll();if(formDone)formDone();
+}
+function fSaveTest(){
+  const main=qd(document.getElementById('fMain').value);if(!main)return toast('😵 実施日が読めません');
+  const tags=[...document.querySelectorAll('#fTags span.on')].map(s=>s.textContent);
+  const sub=document.getElementById('fSub').value;
+  finishLong({id:'L'+Date.now(),typ:'test',name:document.getElementById('fName').value.trim()||sub,cat:'勉強',
+    start:today(),mainDate:main,miles:readRows('fMiles',true),subs:[],perWeek:+document.getElementById('fPW').value||0,contents:tags,time:'',link:''});
+}
+function fSaveComp(){
+  const nm=document.getElementById('fName').value.trim();if(!nm)return toast('😵 名前を');
+  const main=qd(document.getElementById('fMain').value);if(!main)return toast('😵 本番日が読めません');
+  finishLong({id:'L'+Date.now(),typ:'comp',name:nm,cat:'実績',start:today(),mainDate:main,
+    miles:readRows('fMiles',true),subs:readRows('fSubs',true),perWeek:+document.getElementById('fPW').value||0,
+    contents:readRows('fConts',false).map(r=>r.label),time:'',link:document.getElementById('fLink').value.trim()});
+}
+function fSaveEv(type){
+  const nm=document.getElementById('fName').value.trim();if(!nm)return toast('😵 内容を');
+  const dt=qd(document.getElementById('fMain').value);if(!dt)return toast('😵 日付が読めません');
+  ZATSU.push({id:Date.now()+''+Math.random(),title:nm,url:document.getElementById('fLink').value.trim(),date:dt,created:today(),done:false,
+    ev:true,time:document.getElementById('fTime').value.trim(),typ:type==='play'?'遊び/イベント':'面談',cat:type==='play'?'趣味':'人間関係'});
+  save(LS.zatsu,ZATSU);closeForm();toast(`✅ ${dt.slice(5)}に登録!`);renderAll();if(formDone)formDone();
+}
+
+/* ---------- 既存(ルーティン設定) v0.1同等 ---------- */
 function renderRules(){
   const el=document.getElementById('ruleList');el.innerHTML='';
   RULES.forEach(r=>{
@@ -256,11 +467,10 @@ function renderRules(){
     if(r.kind==='hread')desc='第1木曜〜第2金曜';
     d.innerHTML=`<span class="nm">${esc(r.name)}<small>${desc}${r.time?' '+r.time:''}${r.note?' / '+esc(r.note):''}${r.link?'':' / ⚠️リンク未設定'}</small></span>`;
     const sw=document.createElement('div');sw.className='sw'+(r.on?' on':'');
-    sw.onclick=()=>{r.on=!r.on;save(LS.rules,RULES);renderRules();renderHome()};d.appendChild(sw);
-    const eb=document.createElement('button');eb.className='btn sm';eb.textContent='✏️';
-    eb.onclick=()=>openEdit(r.id);d.appendChild(eb);
+    sw.onclick=()=>{r.on=!r.on;save(LS.rules,RULES);renderAll()};d.appendChild(sw);
+    const eb=document.createElement('button');eb.className='btn sm';eb.textContent='✏️';eb.onclick=()=>openEdit(r.id);d.appendChild(eb);
     if(r.custom){const del=document.createElement('button');del.className='btn sm';del.textContent='🗑';
-      del.onclick=()=>{RULES=RULES.filter(x=>x.id!==r.id);save(LS.rules,RULES);renderRules();renderHome()};d.appendChild(del)}
+      del.onclick=()=>{RULES=RULES.filter(x=>x.id!==r.id);save(LS.rules,RULES);renderAll()};d.appendChild(del)}
     el.appendChild(d)});
 }
 function openEdit(id){
@@ -274,7 +484,7 @@ function openEdit(id){
   box.innerHTML=`<h3>✏️ ${esc(r.name)}</h3><div class="form">
   <label>名前</label><input id="eName" value="${esc(r.name)}">
   <label>時間</label><input id="eTime" value="${esc(r.time||'')}" placeholder="19:00">
-  <label>リンク(ZoomやSlackチャンネルURL等はここに)</label><input id="eLink" value="${esc(r.link||'')}">
+  <label>リンク(Zoom/Meet/Slack/Gmail検索URL等)</label><input id="eLink" value="${esc(r.link||'')}">
   ${extra}
   <div style="display:flex;gap:8px"><button class="btn pink" id="eSave">💾 保存</button><button class="btn" onclick="document.getElementById('editModal').classList.remove('show')">閉じる</button></div></div>`;
   if(r.kind==='weekly')box.querySelectorAll('#eDays span').forEach(s=>s.onclick=()=>s.classList.toggle('on'));
@@ -286,8 +496,7 @@ function openEdit(id){
     if(r.kind==='monthlyNth'){r.nth=+document.getElementById('eNth').value;r.dow=+document.getElementById('eDow').value}
     if(r.kind==='juku')r.day=+document.getElementById('eDay').value;
     if(r.kind==='everyN')r.n=Math.max(1,+document.getElementById('eN').value);
-    save(LS.rules,RULES);document.getElementById('editModal').classList.remove('show');
-    toast('💾 保存!');renderRules();renderHome()};
+    save(LS.rules,RULES);document.getElementById('editModal').classList.remove('show');toast('💾 保存!');renderAll()};
   document.getElementById('editModal').classList.add('show');
 }
 function renderNrParams(){
@@ -301,13 +510,12 @@ document.getElementById('nrKind').onchange=renderNrParams;renderNrParams();
 function addRule(){
   const name=document.getElementById('nrName').value.trim();if(!name)return toast('😵 名前を');
   const kind=document.getElementById('nrKind').value;
-  const r={id:'c'+Date.now(),name,kind:kind==='everyN'?'everyN':kind,time:document.getElementById('nrTime').value.trim(),
+  const r={id:'c'+Date.now(),name,kind,time:document.getElementById('nrTime').value.trim(),
     link:document.getElementById('nrLink').value.trim(),cat:document.getElementById('nrCat').value,on:true,custom:true};
   if(kind==='weekly'){r.days=[...document.querySelectorAll('#nrDays span.on')].map(s=>+s.dataset.d);if(!r.days.length)return toast('😵 曜日を')}
   if(kind==='monthlyNth'){r.nth=+document.getElementById('nrNth').value;r.dow=+document.getElementById('nrDow').value}
   if(kind==='everyN'){r.n=Math.max(1,+document.getElementById('nrN').value);r.anchor=today()}
-  RULES.push(r);save(LS.rules,RULES);document.getElementById('nrName').value='';
-  toast('🔁 登録!');renderRules();renderHome();
+  RULES.push(r);save(LS.rules,RULES);document.getElementById('nrName').value='';toast('🔁 登録!');renderAll();
 }
 
 /* ---------- 📬 朝の収穫 ---------- */
@@ -317,7 +525,7 @@ function openHarvest(force){
   const box=document.getElementById('harvestBox');
   if(!load(LS.slackWait,false)){
     box.innerHTML=`<h3>📬 おはよう!まずSlackチェック!</h3>
-    <p>Slackのアクティビティ(メンション)を確認してきてください。戻ってきたら収穫入力モードになります。</p>
+    <p>アクティビティ(メンション)を確認してきてください。戻ってきたら収穫入力モードになります。</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn pink" onclick="goSlack()">💬 Slackを開く</button>
     <button class="btn" onclick="harvestInput()">スキップして入力へ</button>
@@ -332,38 +540,46 @@ function harvestInput(){
   save(LS.slackWait,false);
   if(!harvestRows.length)harvestRows=[{}];
   const box=document.getElementById('harvestBox');
-  box.innerHTML=`<h3>🧺 収穫入力(雑多タスクへ)</h3>
-  <p>Slackで見つけた予定を入れてください。内容かURLどちらか片方でOK!</p>
+  box.innerHTML=`<h3>🧺 収穫入力(単発タスクへ)</h3>
+  <p>内容かURLどちらか片方でOK。日付は「7/23」形式で!</p>
   <div id="hRows">${harvestRows.map((r,i)=>`<div class="hrow">
     <input placeholder="内容" value="${esc(r.t||'')}" data-i="${i}" data-f="t">
     <input placeholder="URL" value="${esc(r.u||'')}" data-i="${i}" data-f="u">
-    <input type="date" value="${r.d||''}" data-i="${i}" data-f="d"></div>`).join('')}</div>
+    <input placeholder="7/23" value="${esc(r.d||'')}" data-i="${i}" data-f="d" style="max-width:90px"></div>`).join('')}</div>
   <button class="btn sm" onclick="hAdd()">＋行を追加</button>
-  <p style="margin-top:12px">長期もの(本格登録):
-  <button class="btn sm" onclick="hStub()">📝テスト</button><button class="btn sm" onclick="hStub()">🏆大会/研究</button>
-  <button class="btn sm" onclick="hStub()">🎮遊び/勉強会</button><button class="btn sm" onclick="hStub()">🗣面談</button></p>
+  <p style="margin-top:12px">長期もの(本格登録・入力は保持されます):
+  <button class="btn sm" onclick="hForm('test')">📝テスト</button><button class="btn sm" onclick="hForm('comp')">🏆大会/研究</button>
+  <button class="btn sm" onclick="hForm('play')">🎮遊び</button><button class="btn sm" onclick="hForm('meet')">🗣面談</button></p>
   <div style="display:flex;gap:8px;margin-top:10px">
   <button class="btn pink" onclick="hSubmit()">✅ 全部登録して閉じる</button>
   <button class="btn" onclick="closeHarvest(true)">収穫なし/閉じる</button></div>`;
   box.querySelectorAll('#hRows input').forEach(inp=>inp.oninput=()=>{harvestRows[+inp.dataset.i][inp.dataset.f]=inp.value});
 }
 function hAdd(){harvestRows.push({});harvestInput()}
-function hStub(){toast('🚧 本格登録フォームはパート3で実装!今は行に書いて雑多へどうぞ')}
+function hForm(type){openForm(type,()=>{toast('↩ 収穫入力に戻りました');})}
 function hSubmit(){
-  let n=0;
-  harvestRows.forEach(r=>{if((r.t||r.u)&&r.d){ZATSU.push({id:Date.now()+''+Math.random(),title:r.t||'',url:r.u||'',date:r.d,created:today(),done:false});n++}});
+  let n=0,bad=0;
+  harvestRows.forEach(r=>{
+    if(!(r.t||r.u))return;
+    const dt=qd(r.d);
+    if(!dt){bad++;return}
+    ZATSU.push({id:Date.now()+''+Math.random(),title:r.t||'',url:r.u||'',date:dt,created:today(),done:false});n++});
+  if(bad)return toast(`😵 日付が読めない行が${bad}件(7/23形式で)`);
   save(LS.zatsu,ZATSU);harvestRows=[];closeHarvest(true);
-  toast(n?`🧺 ${n}件を雑多タスクに登録!`:'登録なしで閉じました');renderZatsu();renderHome();
+  toast(n?`🧺 ${n}件を単発タスクに登録!`:'登録なしで閉じました');renderAll();
 }
 function closeHarvest(mark){if(mark)save(LS.harvest,today());save(LS.slackWait,false);document.getElementById('harvestModal').classList.remove('show')}
 
 /* ---------- 起動 ---------- */
+function renderAll(){renderHome();renderZatsu();renderRules();renderLong();renderGoals()}
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
   document.querySelectorAll('.pane').forEach(x=>x.classList.remove('on'));
   t.classList.add('on');document.getElementById(t.dataset.p).classList.add('on')});
-document.getElementById('zDate').value=today();
-renderHome();renderZatsu();renderRules();
+const dl=document.createElement('datalist');dl.id='times';
+for(let h=6;h<=23;h++)for(const mm of['00','30'])dl.insertAdjacentHTML('beforeend',`<option value="${h}:${mm}">`);
+document.body.appendChild(dl);
+renderAll();
 setTimeout(()=>openHarvest(false),600);
 </script>
 </body>
