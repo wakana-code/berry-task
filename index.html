@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🍓 BerryTask v0.5</title>
+<title>🍓 BerryTask v0.5.1</title>
 <style>
 *{margin:0;box-sizing:border-box}
 body{font-family:'Segoe UI','Hiragino Sans',sans-serif;background:#16141c;color:#e8e2ee;min-height:100vh}
@@ -397,6 +397,7 @@ function editLong(id){
   box.innerHTML=`<h3>✏️ ${esc(l.name)}を編集</h3><div class="form">
   <input id="elN" value="${esc(l.name)}">
   <label>🏁 本番/実施日</label><input id="elM" value="${l.mainDate?l.mainDate.slice(5).replace('-','/'):''}" placeholder="7/23">
+  <label>コミット開始日</label><input id="elS" value="${l.start?l.start.slice(5).replace('-','/'):''}" placeholder="7/23">
   <label>週何日コミット(変更時は曜日を負荷再計算)</label><input id="elP" type="number" value="${l.perWeek||0}" min="0" max="7">
   <label>内容ローテ(カンマ区切り)</label><input id="elC" value="${esc((l.contents||[]).join(','))}">
   <input id="elL" placeholder="URL" value="${esc(l.link||'')}">
@@ -407,6 +408,7 @@ function elSave(id){
   const l=LONG.find(x=>x.id===id);
   const m=qd(document.getElementById('elM').value);if(!m)return toast('😵 日付が読めません');
   l.name=document.getElementById('elN').value.trim()||l.name;l.mainDate=m;
+  const s=qd(document.getElementById('elS').value);if(s)l.start=s;
   const pw=+document.getElementById('elP').value||0;
   if(pw!==l.perWeek){l.perWeek=pw;l.pw=pw?pickDays(pw):[]}
   l.contents=document.getElementById('elC').value.split(',').map(s=>s.trim()).filter(Boolean);
@@ -480,6 +482,7 @@ function openForm(type,onDone){
     <label>実施日</label><input id="fMain" placeholder="7/23">
     <label>教科(選んだ順にローテ)</label><div class="dayck" id="fTags">${SUBJ.map(s=>`<span>${s}</span>`).join('')}</div>
     <label>週何日コミット?</label><input id="fPW" type="number" value="3" min="0" max="7">
+    <label>いつから始める?(空欄=今日から)</label><input id="fStart" placeholder="7/23">
     ${mileRows}
     <div style="display:flex;gap:8px;margin-top:10px"><button class="btn pink" onclick="fSaveTest()">✅ 登録</button><button class="btn" onclick="closeForm()">閉じる</button></div></div>`;
   if(type==='comp')box.innerHTML=`<h3>🏆 大会/研究登録</h3><div class="form">
@@ -488,6 +491,7 @@ function openForm(type,onDone){
     <label>📌 副次締切(応募フォーム/スライド等・任意)</label><div id="fSubs"></div><button class="btn sm" onclick="fRow('fSubs','内容','日付 7/23')">＋追加</button>
     ${mileRows}
     <label>週何日コミット?</label><input id="fPW" type="number" value="2" min="0" max="7">
+    <label>いつから始める?(空欄=今日から)</label><input id="fStart" placeholder="7/23">
     <label>コミット内容ローテ(任意 例:実験→解析→執筆)</label><div id="fConts"></div><button class="btn sm" onclick="fRow('fConts','内容','')">＋追加</button>
     <input id="fLink" placeholder="URL(任意)">
     <div style="display:flex;gap:8px;margin-top:10px"><button class="btn pink" onclick="fSaveComp()">✅ 登録</button><button class="btn" onclick="closeForm()">閉じる</button></div></div>`;
@@ -511,17 +515,18 @@ function finishLong(l){
   toast(`📅 登録!コミット曜日:[${l.pw.map(x=>DOW[x]).join('')}](負荷が軽い曜日に自動配置)`);
   renderAll();if(formDone)formDone();
 }
+function fStartVal(){const v=document.getElementById('fStart');const d=v?qd(v.value):'';return d||today()}
 function fSaveTest(){
   const main=qd(document.getElementById('fMain').value);if(!main)return toast('😵 実施日が読めません');
   const tags=[...document.querySelectorAll('#fTags span.on')].map(s=>s.textContent);
   const sub=document.getElementById('fSub').value;
   finishLong({id:'L'+Date.now(),typ:'test',name:document.getElementById('fName').value.trim()||sub,cat:'勉強',
-    start:today(),mainDate:main,miles:readRows('fMiles',true),subs:[],perWeek:+document.getElementById('fPW').value||0,contents:tags,time:'',link:''});
+    start:fStartVal(),mainDate:main,miles:readRows('fMiles',true),subs:[],perWeek:+document.getElementById('fPW').value||0,contents:tags,time:'',link:''});
 }
 function fSaveComp(){
   const nm=document.getElementById('fName').value.trim();if(!nm)return toast('😵 名前を');
   const main=qd(document.getElementById('fMain').value);if(!main)return toast('😵 本番日が読めません');
-  finishLong({id:'L'+Date.now(),typ:'comp',name:nm,cat:'実績',start:today(),mainDate:main,
+  finishLong({id:'L'+Date.now(),typ:'comp',name:nm,cat:'実績',start:fStartVal(),mainDate:main,
     miles:readRows('fMiles',true),subs:readRows('fSubs',true),perWeek:+document.getElementById('fPW').value||0,
     contents:readRows('fConts',false).map(r=>r.label),time:'',link:document.getElementById('fLink').value.trim()});
 }
@@ -668,7 +673,7 @@ MYPRO.forEach(p=>{
 });
 save(LS.mypro,MYPRO);
 const nowTs=()=>{const d=new Date();return`${fmt(d)} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`};
-function newProj(){MYPRO.unshift({id:'p'+Date.now(),name:'',group:'実績',url:'',desc:'',ideas:[],recs:[],tab:'idea',status:'進行中',hasImg:false,created:today(),editing:true});save(LS.mypro,MYPRO);renderMypro();window.scrollTo({top:0,behavior:'smooth'})}
+function newProj(){MYPRO.unshift({id:'p'+Date.now(),name:'',group:pgCat==='全部'?'実績':pgCat,url:'',desc:'',ideas:[],recs:[],tab:'idea',status:'進行中',hasImg:false,created:today(),editing:true});save(LS.mypro,MYPRO);renderMypro();window.scrollTo({top:0,behavior:'smooth'})}
 function openProj(id){
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
   document.querySelectorAll('.pane').forEach(x=>x.classList.remove('on'));
