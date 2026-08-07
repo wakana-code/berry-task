@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🍓 BerryTask v0.5.1</title>
+<title>🍓 BerryTask v0.5.2</title>
 <style>
 *{margin:0;box-sizing:border-box}
 body{font-family:'Segoe UI','Hiragino Sans',sans-serif;background:#16141c;color:#e8e2ee;min-height:100vh}
@@ -705,7 +705,7 @@ function projCard(p){
     <select class="eGrp">${['勉強','実績','趣味','人間関係'].map(g=>`<option ${p.group===g?'selected':''}>${g}</option>`).join('')}</select>
     <button class="btn sm eStat">🔄 ${p.status}</button>
     <button class="btn pink sm eDone">✅ 確定</button>
-    <button class="btn sm" style="color:#c05656" onclick="delProj('${p.id}')">🗑 削除</button>
+    <button class="btn sm eDel" style="color:#c05656">🗑 削除</button>
     </div></div></div>
     <input type="file" class="eFile" accept="image/*" hidden>`;
     const commit=()=>{p.name=head.querySelector('.eName').value.trim();p.url=head.querySelector('.eUrl').value.trim();
@@ -714,6 +714,7 @@ function projCard(p){
     head.querySelector('.eName').onkeydown=e=>{if(e.key==='Enter')commit()};
     head.querySelector('.eUrl').onkeydown=e=>{if(e.key==='Enter')commit()};
     head.querySelector('.eDone').onclick=commit;
+    head.querySelector('.eDel').onclick=()=>delProj(p.id);
     head.querySelector('.eStat').onclick=ev=>{const st=['進行中','完了','休止'];p.status=st[(st.indexOf(p.status)+1)%3];save(LS.mypro,MYPRO);ev.target.textContent='🔄 '+p.status};
     head.querySelector('.bThumb').onclick=()=>head.querySelector('.eFile').click();
     head.querySelector('.eFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;if(f.size>4*1024*1024)return toast('😵 4MB以下で');
@@ -806,9 +807,10 @@ document.addEventListener('paste',e=>{
 async function delProj(id){
   const p=MYPRO.find(x=>x.id===id);if(!p)return;
   if(!confirm(`「${p.name||'無題'}」を削除?記録も消えます`))return;
-  for(const r of p.recs||[])for(const im of r.imgs||[])await imgDel(im);
-  await imgDel(p.id);
-  MYPRO=MYPRO.filter(x=>x.id!==id);save(LS.mypro,MYPRO);renderMypro();renderAllView();
+  /* ★先にデータから消して即再描画。画像掃除は裏で(失敗しても削除は成立) */
+  MYPRO=MYPRO.filter(x=>x.id!==id);save(LS.mypro,MYPRO);
+  renderMypro();renderAllView();toast('🗑 削除しました');
+  try{for(const r of p.recs||[])for(const im of r.imgs||[])await imgDel(im);await imgDel(p.id)}catch{}
 }
 
 /* ---------- 📊 一覧 ---------- */
