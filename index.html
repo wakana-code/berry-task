@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🍓 BerryTask v0.2</title>
+<title>🍓 BerryTask v0.3</title>
 <style>
 *{margin:0;box-sizing:border-box}
 body{font-family:'Segoe UI','Hiragino Sans',sans-serif;background:#16141c;color:#e8e2ee;min-height:100vh}
@@ -70,10 +70,20 @@ input:focus,select:focus{border-color:#ff9eb5}
 #toast.show{opacity:1}
 .empty{text-align:center;color:#665a75;font-size:13px;padding:26px 0}
 .hint{font-size:11.5px;color:#8d7a99;line-height:1.7;margin-top:8px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.pcard{background:#1d1a26;border:1px solid #322c40;border-radius:13px;overflow:hidden;cursor:pointer}
+.pcard:hover{border-color:#ff9eb5}
+.thumb{background:#242030;display:flex;align-items:center;justify-content:center;color:#453d55;background-size:cover;background-position:center}
+.pcard .thumb{height:84px;font-size:30px}
+.pcard .pi{padding:9px 11px}
+.pcard .pi b{font-size:13px;display:block;color:#e8e2ee}
+.pcard .pi small{font-size:10.5px;color:#9b8dae}
+.pstat{font-size:10px;padding:2px 8px;border-radius:8px;background:#243a2c;color:#8fd8a0}
+.histLine{font-size:12px;color:#c9bfd6;padding:4px 0;border-bottom:1px dashed #2a2536}
 </style>
 </head>
 <body>
-<header><span class="logo">🍓 BerryTask</span><span class="sub">v0.2 — きみの秘書</span>
+<header><span class="logo">🍓 BerryTask</span><span class="sub">v0.3 — きみの秘書</span>
 <button class="btn sm" style="margin-left:auto" onclick="openHarvest(true)">📬 Slack収穫</button></header>
 <div id="tabs">
 <button class="tab big on" data-p="homePane">🏠 ホーム</button>
@@ -82,6 +92,7 @@ input:focus,select:focus{border-color:#ff9eb5}
 <button class="tab" data-p="goalPane">🎯 月次目標</button>
 <button class="tab" data-p="longPane">📅 長期</button>
 <button class="tab" data-p="tanPane">📥 単発</button>
+<button class="tab" data-p="allPane">📊 一覧</button>
 <button class="tab big" data-p="setPane">⚙️ 既存</button>
 </div>
 
@@ -104,7 +115,12 @@ input:focus,select:focus{border-color:#ff9eb5}
 </div>
 </div>
 
-<div class="pane" id="myproPane"><div class="card"><h2>📁 マイプロ</h2><div class="empty">🚧 次パートで実装!<br>(画像サムネ+URL+記録+グループ分けのプロジェクト管理ページ)</div></div></div>
+<div class="pane" id="myproPane">
+<div class="card"><h2>📁 マイプロ <button class="btn pink sm" style="float:right" onclick="newProj()">➕ 新規</button></h2>
+<div class="dayck" id="pgFilter" style="margin-bottom:10px"></div>
+<div class="pgrid" id="pGrid"></div></div></div>
+
+<div class="pane" id="allPane"><div class="card"><h2>📊 一覧</h2><div id="allBody"></div></div></div>
 
 <div class="pane" id="goalPane"><div class="card"><h2>🎯 月次目標</h2><div id="goalList"></div>
 <button class="btn pink" style="margin-top:8px" onclick="openGoalRegCurrent()">📝 登録/追加</button></div></div>
@@ -133,7 +149,7 @@ input:focus,select:focus{border-color:#ff9eb5}
 
 <script>
 /* ===== 🍓 BerryTask v0.2 ===== */
-const LS={rules:'bt_rules',done:'bt_done',zatsu:'bt_zatsu',harvest:'bt_lastHarvest',cycle:'bt_reportCycle',slackWait:'bt_slackWait',long:'bt_long',goals:'bt_goals'};
+const LS={rules:'bt_rules',done:'bt_done',zatsu:'bt_zatsu',harvest:'bt_lastHarvest',cycle:'bt_reportCycle',slackWait:'bt_slackWait',long:'bt_long',goals:'bt_goals',mypro:'bt_mypro'};
 const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
 const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const DOW=['日','月','火','水','木','金','土'];
@@ -178,7 +194,7 @@ const SEED=[
 {id:'gmail',name:'Gmail返信(2件)',kind:'everyN',n:2,anchor:'2026-01-02',time:'',link:'',cat:'人間関係',on:true,note:'リンクは編集からGmail検索URLを'}
 ];
 let RULES=load(LS.rules,null);if(!RULES){RULES=SEED;save(LS.rules,RULES)}
-let DONE=load(LS.done,{}),ZATSU=load(LS.zatsu,[]),CYCLE=load(LS.cycle,{}),LONG=load(LS.long,[]),GOALS=load(LS.goals,{});
+let DONE=load(LS.done,{}),ZATSU=load(LS.zatsu,[]),CYCLE=load(LS.cycle,{}),LONG=load(LS.long,[]),GOALS=load(LS.goals,{}),MYPRO=load(LS.mypro,[]);
 let selDate=today();
 const mkeyOf=ds=>{const d=parse(ds);return d.getFullYear()+'-'+d.getMonth()};
 const nextMK=k=>{let[y,m]=k.split('-').map(Number);m++;if(m>11){m=0;y++}return y+'-'+m};
@@ -570,12 +586,138 @@ function hSubmit(){
 }
 function closeHarvest(mark){if(mark)save(LS.harvest,today());save(LS.slackWait,false);document.getElementById('harvestModal').classList.remove('show')}
 
+/* ---------- 📁 マイプロ(画像はIndexedDB) ---------- */
+let idb=null;
+const idbReady=new Promise(res=>{const rq=indexedDB.open('bt_img',1);
+  rq.onupgradeneeded=e=>e.target.result.createObjectStore('img');
+  rq.onsuccess=e=>{idb=e.target.result;res()};rq.onerror=()=>res()});
+const imgPut=(k,blob)=>new Promise(r=>{if(!idb)return r();const tx=idb.transaction('img','readwrite');tx.objectStore('img').put(blob,k);tx.oncomplete=r});
+const imgGet=k=>new Promise(r=>{if(!idb)return r(null);const rq=idb.transaction('img').objectStore('img').get(k);rq.onsuccess=()=>r(rq.result||null);rq.onerror=()=>r(null)});
+const imgDel=k=>new Promise(r=>{if(!idb)return r();const tx=idb.transaction('img','readwrite');tx.objectStore('img').delete(k);tx.oncomplete=r});
+let pgCat='全部';
+function renderMypro(){
+  const f=document.getElementById('pgFilter');if(!f)return;f.innerHTML='';
+  ['全部','勉強','実績','趣味','人間関係'].forEach(c=>{const s=document.createElement('span');if(c===pgCat)s.className='on';s.textContent=c;s.onclick=()=>{pgCat=c;renderMypro()};f.appendChild(s)});
+  const g=document.getElementById('pGrid');g.innerHTML='';
+  const list=MYPRO.filter(p=>pgCat==='全部'||p.group===pgCat);
+  if(!list.length){g.innerHTML='<div class="empty" style="grid-column:1/-1">なし!➕から作ろう</div>';return}
+  list.forEach(p=>{
+    const c=document.createElement('div');c.className='pcard';
+    c.innerHTML=`<div class="thumb" id="th_${p.id}">📁</div><div class="pi"><b>${esc(p.name)}</b><small>${p.group} / ${p.status} / 記録${(p.logs||[]).length}件</small></div>`;
+    c.onclick=()=>openProj(p.id);g.appendChild(c);
+    if(p.hasImg)imgGet(p.id).then(b=>{if(b){const t=document.getElementById('th_'+p.id);if(t){t.style.backgroundImage=`url(${URL.createObjectURL(b)})`;t.textContent=''}}});
+  });
+}
+function newProj(){
+  const box=document.getElementById('formBox');
+  box.innerHTML=`<h3>➕ 新規プロジェクト</h3><div class="form">
+  <input id="pName" placeholder="プロジェクト名">
+  <select id="pGroup"><option>勉強</option><option>実績</option><option>趣味</option><option>人間関係</option></select>
+  <textarea id="pDesc" rows="2" placeholder="概要(任意)"></textarea>
+  <input id="pUrl" placeholder="URL(任意)">
+  <label>サムネ画像(任意・4MBまで)</label><input type="file" id="pImg" accept="image/*">
+  <div style="display:flex;gap:8px"><button class="btn pink" onclick="saveProj()">✅ 作成</button><button class="btn" onclick="closeForm()">閉じる</button></div></div>`;
+  document.getElementById('formModal').classList.add('show');
+}
+async function saveProj(){
+  const nm=document.getElementById('pName').value.trim();if(!nm)return toast('😵 名前を');
+  const p={id:'p'+Date.now(),name:nm,group:document.getElementById('pGroup').value,desc:document.getElementById('pDesc').value.trim(),
+    url:document.getElementById('pUrl').value.trim(),status:'進行中',logs:[],hasImg:false,created:today()};
+  const f=document.getElementById('pImg').files[0];
+  if(f){if(f.size>4*1024*1024)toast('⚠️ 画像4MB超はスキップ');else{await imgPut(p.id,f);p.hasImg=true}}
+  MYPRO.push(p);save(LS.mypro,MYPRO);closeForm();toast('📁 作成!');renderMypro();
+}
+async function openProj(id){
+  const p=MYPRO.find(x=>x.id===id);if(!p)return;
+  const box=document.getElementById('formBox');
+  box.innerHTML=`<h3>📁 ${esc(p.name)} <span class="pstat">${p.status}</span> <span class="badge">${p.group}</span></h3>
+  <div class="thumb" id="dThumb" style="height:110px;border-radius:11px;margin-bottom:10px;font-size:36px">📁</div>
+  ${p.desc?`<p>${esc(p.desc)}</p>`:''}
+  ${p.url?`<button class="start" style="width:100%;margin-bottom:10px" onclick="window.open('${esc(p.url)}','_blank')">▶ URLを開く</button>`:''}
+  <label style="font-size:12px;color:#9b8dae">📝 記録</label>
+  <div style="max-height:150px;overflow-y:auto;margin:6px 0">${(p.logs||[]).map(l=>`<div class="histLine">${l.date.slice(5)} ${esc(l.text)}</div>`).join('')||'<div class="empty" style="padding:8px">記録なし</div>'}</div>
+  <textarea id="plText" rows="2" placeholder="進捗を記録..." style="width:100%"></textarea>
+  <label style="font-size:12px;color:#c9bfd6;display:block;margin:6px 0"><input type="checkbox" id="plSns"> 発信ネタ🔥(2日後にLinkedIn/X投稿タスク自動生成)</label>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+  <button class="btn pink sm" onclick="addLog('${p.id}')">✍️ 記録追加</button>
+  <button class="btn sm" onclick="cycleStat('${p.id}')">🔄 状態</button>
+  <button class="btn sm" onclick="document.getElementById('dImg').click()">🖼 画像</button>
+  <button class="btn sm" onclick="editProj('${p.id}')">✏️ 編集</button>
+  <button class="btn sm" style="color:#ff9d9d" onclick="delProj('${p.id}')">🗑</button>
+  <button class="btn sm" onclick="closeForm()">閉じる</button></div>
+  <input type="file" id="dImg" accept="image/*" hidden>`;
+  document.getElementById('dImg').onchange=async e=>{const f=e.target.files[0];if(!f)return;
+    if(f.size>4*1024*1024)return toast('😵 4MB以下で');
+    await imgPut(p.id,f);p.hasImg=true;save(LS.mypro,MYPRO);toast('🖼 設定!');openProj(id);renderMypro()};
+  if(p.hasImg){const b=await imgGet(p.id);if(b){const t=document.getElementById('dThumb');if(t){t.style.backgroundImage=`url(${URL.createObjectURL(b)})`;t.textContent=''}}}
+  document.getElementById('formModal').classList.add('show');
+}
+function addLog(id){
+  const p=MYPRO.find(x=>x.id===id);
+  const tx=document.getElementById('plText').value.trim();if(!tx)return toast('😵 内容を');
+  p.logs.unshift({date:today(),text:tx});
+  if(document.getElementById('plSns').checked){
+    const d2=fmt(addD(new Date(),2));
+    ZATSU.push({id:Date.now()+''+Math.random(),title:`LinkedIn/X投稿: ${p.name}(${tx.slice(0,20)})`,url:'https://x.com/compose/post',date:d2,created:d2,done:false});
+    save(LS.zatsu,ZATSU);toast('🔥 2日後にSNS投稿タスクを仕込みました')}
+  save(LS.mypro,MYPRO);openProj(id);renderAll();
+}
+function cycleStat(id){const p=MYPRO.find(x=>x.id===id);const st=['進行中','完了','休止'];p.status=st[(st.indexOf(p.status)+1)%3];save(LS.mypro,MYPRO);openProj(id);renderMypro()}
+function editProj(id){const p=MYPRO.find(x=>x.id===id);
+  const nm=prompt('名前:',p.name);if(nm===null)return;p.name=nm.trim()||p.name;
+  const u=prompt('URL:',p.url||'');if(u!==null)p.url=u.trim();
+  const d=prompt('概要:',p.desc||'');if(d!==null)p.desc=d.trim();
+  save(LS.mypro,MYPRO);openProj(id);renderMypro()}
+async function delProj(id){if(!confirm('削除する?記録も消えます'))return;
+  MYPRO=MYPRO.filter(x=>x.id!==id);await imgDel(id);save(LS.mypro,MYPRO);closeForm();renderMypro()}
+
+/* ---------- 📊 一覧 ---------- */
+let allCat='全部';
+function renderAllView(){
+  const el=document.getElementById('allBody');if(!el)return;el.innerHTML='';
+  const chips=document.createElement('div');chips.className='dayck';chips.style.marginBottom='12px';
+  ['全部','勉強','実績','趣味','人間関係'].forEach(c=>{const s=document.createElement('span');if(c===allCat)s.className='on';s.textContent=c;s.onclick=()=>{allCat=c;renderAllView()};chips.appendChild(s)});
+  el.appendChild(chips);
+  const want=c=>allCat==='全部'||c===allCat;
+  const head=t=>el.insertAdjacentHTML('beforeend',`<div style="font-size:13px;color:#ffd3a3;margin:12px 0 6px;font-weight:bold">${t}</div>`);
+  const rs=RULES.filter(r=>want(r.cat));
+  if(rs.length){head('🔁 ルーティン');rs.forEach(r=>{
+    const d=document.createElement('div');d.className='rule'+(r.on?'':' off');
+    d.innerHTML=`<span class="nm">${esc(r.name)}<small>${r.cat}</small></span>`;
+    const sw=document.createElement('div');sw.className='sw'+(r.on?' on':'');
+    sw.onclick=()=>{r.on=!r.on;save(LS.rules,RULES);renderAll()};d.appendChild(sw);el.appendChild(d)})}
+  const ls=LONG.filter(l=>want(l.cat));
+  if(ls.length){head('📅 長期');ls.forEach(l=>{
+    const d=document.createElement('div');d.className='rule'+(l.off?' off':'');
+    d.innerHTML=`<span class="nm">${esc(l.name)}<small>🏁${l.mainDate?l.mainDate.slice(5):'-'} / ${l.cat}</small></span>`;
+    const sw=document.createElement('div');sw.className='sw'+(l.off?'':' on');
+    sw.onclick=()=>{l.off=!l.off;save(LS.long,LONG);renderAll()};d.appendChild(sw);el.appendChild(d)})}
+  const zs=ZATSU.filter(z=>!z.done&&(allCat==='全部'||want(z.cat)));
+  if(zs.length){head('📥 単発(未完了)');[...zs].sort((a,b)=>a.date<b.date?-1:1).forEach(z=>{
+    const d=document.createElement('div');d.className='task'+(z.date<today()?' late':'');
+    d.innerHTML=`<span class="time">${z.date.slice(5)}</span><span class="tt">${esc(z.title||z.url)}</span>`;
+    const b=document.createElement('button');b.className='ok';b.textContent='✅';
+    b.onclick=()=>{z.done=true;save(LS.zatsu,ZATSU);renderAll()};d.appendChild(b);el.appendChild(d)})}
+  const gk=mkeyOf(today()),g=GOALS[gk];
+  if(g){const gs=g.items.filter(i=>want(i.cat));
+    if(gs.length){head('🎯 月次目標(今月)');gs.forEach(it=>{
+      el.insertAdjacentHTML('beforeend',`<div class="task${it.done?' done':''}"><span class="time">${it.date.slice(5)}</span><span class="tt">${esc(it.text)}</span><span class="badge">${it.cat}</span><span>${it.done?'✅':'⏳'}</span></div>`)})}}
+  const ps=MYPRO.filter(p=>want(p.group));
+  if(ps.length){head('📁 マイプロ');ps.forEach(p=>{
+    const d=document.createElement('div');d.className='rule';d.style.cursor='pointer';
+    d.innerHTML=`<span class="nm">${esc(p.name)}<small>${p.group} / ${p.status} / 記録${(p.logs||[]).length}件</small></span><span class="pstat">開く→</span>`;
+    d.onclick=()=>openProj(p.id);el.appendChild(d)})}
+  if(el.children.length===1)el.insertAdjacentHTML('beforeend','<div class="empty">このカテゴリにはまだ何もなし</div>');
+}
+
 /* ---------- 起動 ---------- */
-function renderAll(){renderHome();renderZatsu();renderRules();renderLong();renderGoals()}
+function renderAll(){renderHome();renderZatsu();renderRules();renderLong();renderGoals();renderMypro();renderAllView()}
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
   document.querySelectorAll('.pane').forEach(x=>x.classList.remove('on'));
-  t.classList.add('on');document.getElementById(t.dataset.p).classList.add('on')});
+  t.classList.add('on');document.getElementById(t.dataset.p).classList.add('on');
+  if(t.dataset.p==='allPane')renderAllView();if(t.dataset.p==='myproPane')renderMypro()});
+idbReady.then(()=>renderMypro());
 const dl=document.createElement('datalist');dl.id='times';
 for(let h=6;h<=23;h++)for(const mm of['00','30'])dl.insertAdjacentHTML('beforeend',`<option value="${h}:${mm}">`);
 document.body.appendChild(dl);
