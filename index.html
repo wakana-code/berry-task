@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🍓 BerryTask v0.5.2</title>
+<title>🍓 BerryTask v0.5.3</title>
 <style>
 *{margin:0;box-sizing:border-box}
 body{font-family:'Segoe UI','Hiragino Sans',sans-serif;background:#16141c;color:#e8e2ee;min-height:100vh}
@@ -795,14 +795,29 @@ async function attachImg(p,ta,file){
 document.addEventListener('paste',e=>{
   if(!document.getElementById('myproPane').classList.contains('on'))return;
   const it=[...e.clipboardData.items].find(i=>i.type.startsWith('image'));if(!it)return;
-  const cardEl=document.activeElement&&document.activeElement.closest?document.activeElement.closest('.note'):null;
-  const p=cardEl?MYPRO.find(x=>'note_'+x.id===cardEl.id):MYPRO.find(x=>x.editing);
-  if(!p)return;e.preventDefault();
+  const ae=document.activeElement;
+  const cardEl=ae&&ae.closest?ae.closest('.note'):null;
   const f=it.getAsFile();
-  if(p.editing){if(f.size>4*1024*1024)return toast('😵 4MB以下で');
-    imgPut(p.id,f).then(()=>{p.hasImg=true;save(LS.mypro,MYPRO);loadThumb(p);toast('🖼 サムネ設定!')});return}
-  const ta=cardEl?cardEl.querySelector('.ncomp textarea'):null;
-  if(ta&&p.tab==='rec'){if(!PEND[p.id])PEND[p.id]={imgs:[]};attachImg(p,ta,f)}
+  /* ★最優先: 記録の入力欄にフォーカス中→文中埋め込み */
+  if(cardEl&&ae.matches('.ncomp textarea')){
+    const p=MYPRO.find(x=>'note_'+x.id===cardEl.id);if(!p)return;
+    e.preventDefault();
+    if(!PEND[p.id])PEND[p.id]={imgs:[]};
+    attachImg(p,ae,f);return;
+  }
+  /* 次点: 編集モードのカード内(サムネ枠や名前欄等)にフォーカス→サムネ */
+  if(cardEl){
+    const p=MYPRO.find(x=>'note_'+x.id===cardEl.id);
+    if(p&&p.editing){e.preventDefault();
+      if(f.size>4*1024*1024)return toast('😵 4MB以下で');
+      imgPut(p.id,f).then(()=>{p.hasImg=true;save(LS.mypro,MYPRO);loadThumb(p);toast('🖼 サムネ設定!')})}
+    return;
+  }
+  /* どこにもフォーカスなし: 編集モードのカードが1枚だけならサムネとみなす */
+  const eds=MYPRO.filter(x=>x.editing);
+  if(eds.length===1){e.preventDefault();const p=eds[0];
+    if(f.size>4*1024*1024)return toast('😵 4MB以下で');
+    imgPut(p.id,f).then(()=>{p.hasImg=true;save(LS.mypro,MYPRO);loadThumb(p);toast('🖼 サムネ設定!')})}
 });
 async function delProj(id){
   const p=MYPRO.find(x=>x.id===id);if(!p)return;
