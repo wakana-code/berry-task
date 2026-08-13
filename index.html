@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🍓 BerryTask v0.7</title>
+<title>🍓 BerryTask v0.7.1</title>
 <style>
 *{margin:0;box-sizing:border-box}
 body{font-family:'Segoe UI','Hiragino Sans',sans-serif;background:#16141c;color:#e8e2ee;min-height:100vh}
@@ -682,9 +682,17 @@ function closeHarvest(mark){if(mark)save(LS.harvest,today());save(LS.slackWait,f
 
 /* ---------- 📁 マイプロ ---------- */
 let idb=null;
-const idbReady=new Promise(res=>{const rq=indexedDB.open('bt_img',1);
-  rq.onupgradeneeded=e=>e.target.result.createObjectStore('img');
-  rq.onsuccess=e=>{idb=e.target.result;res()};rq.onerror=()=>res()});
+const idbReady=new Promise(res=>{
+  let done=false;const ok=()=>{if(!done){done=true;res()}};
+  setTimeout(ok,1500); /* ★保険: 何があっても1.5秒で起動続行 */
+  try{
+    const rq=indexedDB.open('bt_img',1);
+    rq.onupgradeneeded=e=>{try{e.target.result.createObjectStore('img')}catch{}};
+    rq.onsuccess=e=>{idb=e.target.result;ok()};
+    rq.onerror=ok;
+    rq.onblocked=ok; /* ★他タブでDB使用中でも止まらない */
+  }catch{ok()}
+});
 const imgPut=(k,blob)=>new Promise(r=>{if(!idb)return r();const tx=idb.transaction('img','readwrite');tx.objectStore('img').put(blob,k);tx.oncomplete=r;tx.onerror=r});
 const imgGet=k=>new Promise(r=>{if(!idb)return r(null);const rq=idb.transaction('img').objectStore('img').get(k);rq.onsuccess=()=>r(rq.result||null);rq.onerror=()=>r(null)});
 const imgDel=k=>new Promise(r=>{if(!idb)return r();const tx=idb.transaction('img','readwrite');tx.objectStore('img').delete(k);tx.oncomplete=r;tx.onerror=r});
