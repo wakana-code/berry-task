@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🍓 BerryTask v0.5.5</title>
+<title>🍓 BerryTask v0.6</title>
 <style>
 *{margin:0;box-sizing:border-box}
 body{font-family:'Segoe UI','Hiragino Sans',sans-serif;background:#16141c;color:#e8e2ee;min-height:100vh}
@@ -108,10 +108,21 @@ input:focus,select:focus{border-color:#ff9eb5}
 #fsBody{flex:1;overflow-y:auto;padding:18px}
 #fsBody .note{max-width:860px;margin:0 auto}
 #fsBody .nentry img{height:220px}
+.calGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.calDow{text-align:center;font-size:11px;color:#9b8dae;padding:4px 0}
+.calCell{min-height:76px;background:#1d1a26;border:1px solid #2a2536;padding:3px 4px;cursor:pointer;overflow:hidden}
+.calCell:hover{border-color:#453d55}
+.calCell.today{border-color:#ff9eb5}
+.calCell b{font-size:11px;color:#c9bfd6;display:block}
+.cev{display:block;font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.6}
+.cev.due{color:#ff6b6b}.cev.mile{color:#ffb84d}.cev.rdue{color:#ff9eb5}.cev.plan{color:#8fc7ff}.cev.soft{color:#776b85}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;margin-top:8px;color:#9b8dae}
+#aiLog{display:none;background:#12101a;border:1px solid #322c40;padding:12px;font-size:13px;line-height:1.9;max-height:260px;overflow-y:auto;margin-top:10px;white-space:pre-wrap}
+#aiLog.show{display:block}
 </style>
 </head>
 <body>
-<header><span class="logo">🍓 BerryTask</span><span class="sub">v0.5 — きみの秘書</span>
+<header><span class="logo">🍓 BerryTask</span><span class="sub">v0.6 — きみの秘書</span>
 <button class="btn sm" style="margin-left:auto" onclick="openHarvest(true)">📬 Slack収穫</button></header>
 <div id="tabs">
 <button class="tab big on" data-p="homePane">🏠 ホーム</button>
@@ -134,6 +145,17 @@ input:focus,select:focus{border-color:#ff9eb5}
 <div class="hrow"><input id="zTitle" placeholder="内容"><input id="zUrl" placeholder="URL(任意)"><input id="zDate" placeholder="7/23" style="max-width:100px"></div>
 <button class="btn pink" onclick="addZatsu()">📥 追加</button>
 <p class="hint">日付は「7/23」でOK(過去日なら来年扱い)。期限まで毎日表示/前日🟡/超過🔴</p></div>
+<div class="card"><h2>🤖 AIおまかせ登録</h2>
+<textarea id="aiIn" rows="4" style="width:100%" placeholder="雑に書いてOK!例:「日記アプリを来週までに作りたい」「〇〇コンテスト エントリー6月〜9/10 本選10/11…(コピペでも)」"></textarea>
+<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+<button class="btn pink" onclick="aiSend()">🤖 AIに登録してもらう</button>
+<button class="btn sm" onclick="aiReset()">🔄 会話リセット</button></div>
+<div id="aiLog"></div>
+<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center">
+<input type="password" id="aiKey" placeholder="NVIDIA APIキー(nvapi-...)" style="flex:1;min-width:150px">
+<input id="aiModel" placeholder="z-ai/glm-5.2" style="max-width:140px">
+<button class="btn sm" onclick="aiSaveCfg()">💾</button></div>
+<p class="hint">🔒 キーはこのブラウザのlocalStorageにのみ保存(コードには入りません)。AIが聞き返してきたら上の欄に答えを書いてもう一度送信!</p></div>
 <div class="card"><h2>🗂 種類から登録</h2>
 <button class="choice" onclick="openForm('test')">📝 テスト<small>クラス替え/ミニテスト/模試 — 教科ローテ自動割り振り</small></button>
 <button class="choice" onclick="openForm('comp')">🏆 大会/研究<small>本番締切+副次締切+マイルストーン+週xコミット</small></button>
@@ -150,7 +172,14 @@ input:focus,select:focus{border-color:#ff9eb5}
 <div id="pList"></div>
 </div>
 
-<div class="pane" id="allPane"><div class="card"><h2>📊 一覧</h2><div id="allBody"></div></div></div>
+<div class="pane" id="allPane">
+<div class="card"><h2>🗓 カレンダー
+<span style="float:right"><button class="btn sm" onclick="calMove(-1)">←</button>
+<b id="calTitle" style="font-size:14px;color:#ffd3a3;margin:0 8px"></b>
+<button class="btn sm" onclick="calMove(1)">→</button></span></h2>
+<div class="calGrid" id="calBody"></div>
+<div class="legend"><span style="color:#ff6b6b">■締切/本番(遵守!)</span><span style="color:#ffb84d">■マイルストーン/目標</span><span style="color:#ff9eb5">■締切的ルーティン</span><span style="color:#8fc7ff">■時間のある予定</span><span style="color:#776b85">■ゆるルーティン</span></div></div>
+<div class="card"><h2>📊 一覧</h2><div id="allBody"></div></div></div>
 
 <div class="pane" id="goalPane"><div class="card"><h2>🎯 月次目標</h2><div id="goalList"></div>
 <button class="btn pink" style="margin-top:8px" onclick="openGoalRegCurrent()">📝 登録/追加</button></div></div>
@@ -182,7 +211,7 @@ input:focus,select:focus{border-color:#ff9eb5}
 
 <script>
 /* ===== 🍓 BerryTask v0.2 ===== */
-const LS={rules:'bt_rules',done:'bt_done',zatsu:'bt_zatsu',harvest:'bt_lastHarvest',cycle:'bt_reportCycle',slackWait:'bt_slackWait',long:'bt_long',goals:'bt_goals',mypro:'bt_mypro'};
+const LS={rules:'bt_rules',done:'bt_done',zatsu:'bt_zatsu',harvest:'bt_lastHarvest',cycle:'bt_reportCycle',slackWait:'bt_slackWait',long:'bt_long',goals:'bt_goals',mypro:'bt_mypro',aikey:'bt_aikey',aimodel:'bt_aimodel'};
 const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
 const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const DOW=['日','月','火','水','木','金','土'];
@@ -902,14 +931,103 @@ function renderAllView(){
   if(el.children.length===1)el.insertAdjacentHTML('beforeend','<div class="empty">このカテゴリにはまだ何もなし</div>');
 }
 
-/* ---------- 起動 ---------- */
-function renderAll(){renderHome();renderZatsu();renderRules();renderLong();renderGoals();renderMypro();renderAllView()}
-document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+/* ---------- 🗓 カレンダー ---------- */
+let calD=new Date();calD.setDate(1);
+function calMove(n){calD.setMonth(calD.getMonth()+n);renderCal()}
+function calFor(ds){
+  const d=parse(ds),y=d.getFullYear(),m=d.getMonth(),dow=d.getDay(),out=[];
+  const hr=hreadDays(y,m);
+  if(d.getDate()===15&&RULES.some(r=>r.id==='report'&&r.on))out.push({t:'レポ締切',c:'rdue'});
+  for(const r of RULES){
+    if(!r.on)continue;
+    if(r.kind==='hread'){
+      if(ds===fmt(hr.eng))out.push({t:'Hリード英',c:'rdue'});
+      if(ds===fmt(hr.mj))out.push({t:'Hリード数国',c:'rdue'});
+      if(ds===fmt(hr.dead))out.push({t:'Hリード〆',c:'rdue'});
+    }else if(r.kind==='weekly'&&r.days.length<7){
+      if(r.days.includes(dow))out.push({t:r.name,c:r.time?'plan':'soft'});
+    }else if(r.kind==='monthlyNth'){
+      if(ds===fmt(nthDow(y,m,r.nth,r.dow)))out.push({t:r.name,c:r.time?'plan':'soft'});
+    }else if(r.kind==='juku'){
+      if(dow===r.day)out.push({t:r.name,c:'soft'});
+    }
+  }
+  for(const l of LONG){
+    if(l.off)continue;
+    (l.subs||[]).forEach(s=>{if(s.date===ds)out.push({t:'📌'+s.label,c:'due'})});
+    (l.miles||[]).forEach(ms=>{if(ms.date===ds)out.push({t:'🚩'+ms.label,c:'mile'})});
+    if(l.mainDate===ds)out.push({t:'🏁'+l.name,c:'due'});
+  }
+  for(const z of ZATSU){if(z.done)continue;
+    if(z.date===ds)out.push(z.ev?{t:(z.time?z.time+' ':'')+(z.title||'予定'),c:'plan'}:{t:(z.title||z.url),c:'due'})}
+  const g=GOALS[mkeyOf(ds)];
+  if(g)g.items.forEach(it=>{if(!it.done&&it.date===ds)out.push({t:'🎯'+it.text,c:'mile'})});
+  return out.sort((a,b)=>({due:0,mile:1,rdue:2,plan:3,soft:4}[a.c]-{due:0,mile:1,rdue:2,plan:3,soft:4}[b.c]));
+}
+function renderCal(){
+  const el=document.getElementById('calBody');if(!el)return;
+  const y=calD.getFullYear(),m=calD.getMonth();
+  document.getElementById('calTitle').textContent=`${y}年${m+1}月`;
+  const first=new Date(y,m,1),lastN=new Date(y,m+1,0).getDate();
+  let html=DOW.map(d=>`<div class="calDow">${d}</div>`).join('');
+  for(let i=0;i<first.getDay();i++)html+='<div></div>';
+  for(let day=1;day<=lastN;day++){
+    const ds=fmt(new Date(y,m,day)),evs=calFor(ds);
+    html+=`<div class="calCell${ds===today()?' today':''}" data-ds="${ds}"><b>${day}</b>`;
+    evs.slice(0,3).forEach(e=>html+=`<span class="cev ${e.c}">${esc(e.t)}</span>`);
+    if(evs.length>3)html+=`<span class="cev soft">+${evs.length-3}件</span>`;
+    html+='</div>';
+  }
+  el.innerHTML=html;
+  el.querySelectorAll('.calCell').forEach(c=>c.onclick=()=>{
+    selDate=c.dataset.ds;
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.pane').forEach(x=>x.classList.remove('on'));
+    document.querySelector('.tab[data-p="homePane"]').classList.add('on');
+    document.getElementById('homePane').classList.add('on');renderHome()});
+}
+
+/* ---------- 🤖 AIおまかせ登録 ---------- */
+let AICONV=null;
+function aiSaveCfg(){
+  save(LS.aikey,document.getElementById('aiKey').value.trim());
+  save(LS.aimodel,document.getElementById('aiModel').value.trim()||'z-ai/glm-5.2');
+  toast('💾 AI設定を保存!');
+}
+function aiReset(){AICONV=null;document.getElementById('aiLog').innerHTML='';document.getElementById('aiLog').classList.remove('show');toast('🔄 会話リセット')}
+function aiSys(){
+  const d=new Date();
+  return`あなたはタスク管理アプリの登録アシスタント。ユーザーの雑な指示をJSONに変換する。
+今日は${today()}(${DOW[d.getDay()]}曜)。相対日付(来週まで等)は具体的な日付に解決せよ。
+必ずJSONのみで応答。形式は次の2種:
+1) 情報が曖昧で確認が必要な時(年が不明、名古屋/東京どちらか不明等): {"action":"ask","question":"簡潔な質問"}
+2) 登録可能な時: {"action":"register","note":"1行の要約","items":[...]}
+itemsの各要素は以下のいずれか:
+- 期限までに1回やる事: {"type":"single","title":"","url":"","date":"YYYY-MM-DD"}
+- 特定日時の予定(本選/面談/イベント): {"type":"event","title":"","date":"YYYY-MM-DD","time":"13:00","url":"","kind":"遊び"or"面談"}
+- 長期取り組み(大会/研究/テスト勉強): {"type":"long","typ":"comp"or"test","name":"","mainDate":"最終本番日","start":"開始日(通常は今日)","perWeek":週何日やるか(不明なら2),"contents":[],"subs":[{"label":"エントリー締切等","date":""}],"miles":[{"label":"中間目標","date":""}],"link":""}
+- 繰り返し: {"type":"routine","name":"","kind":"weekly","days":[0-6の曜日],"time":"","link":"","cat":"勉強"}
+方針: 大会情報のコピペならlong1個にまとめ、エントリー締切や書類審査はsubsに、本選日程はmainDateに。ユーザーが答えた内容は前の文脈と合わせて解釈。質問は本当に必要な時だけ、1回で全部聞く。`;
+}
+async function aiCall(messages){
+  const key=load(LS.aikey,'');
+  const res=await fetch('https://integrate.api.nvidia.com/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+    body:JSON.stringify({model:load(LS.aimodel,'z-ai/glm-5.2'),messages,temperature:0.2,max_tokens:4096})});
+  if(!res.ok)throw new Error(`API ${res.status}: ${(await res.text()).slice(0,200)}`);
+  const j=await res.json();
+  return j.choices[0].message.content;
+}
+function aiParse(s){
+  s=s.replace(/document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
   document.querySelectorAll('.pane').forEach(x=>x.classList.remove('on'));
   t.classList.add('on');document.getElementById(t.dataset.p).classList.add('on');
-  if(t.dataset.p==='allPane')renderAllView();if(t.dataset.p==='myproPane')renderMypro()});
+  if(t.dataset.p==='allPane'){renderAllView();renderCal()}if(t.dataset.p==='myproPane')renderMypro()});
 idbReady.then(()=>renderMypro());
+document.getElementById('aiKey').value=load(LS.aikey,'');
+document.getElementById('aiModel').value=load(LS.aimodel,'z-ai/glm-5.2');
 const dl=document.createElement('datalist');dl.id='times';
 for(let h=6;h<=23;h++)for(const mm of['00','30'])dl.insertAdjacentHTML('beforeend',`<option value="${h}:${mm}">`);
 document.body.appendChild(dl);
