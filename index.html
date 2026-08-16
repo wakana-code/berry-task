@@ -995,7 +995,7 @@ function aiSys(){
 }
 async function aiCall(messages){
   const key=load(LS.aikey,'');
-  const res=await fetch('https://integrate.api.nvidia.com/v1/chat/completions',{
+  const res=await fetch('https://berry-ai.wakana-25r1100199.workers.dev',{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
     body:JSON.stringify({model:load(LS.aimodel,'z-ai/glm-5.2'),messages:messages,temperature:0.2,max_tokens:4096,stream:false})});
