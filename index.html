@@ -995,7 +995,7 @@ function aiSys(){
 }
 async function aiCall(messages){
   const key=load(LS.aikey,'');
-  const res=await fetch('https://berry-ai.wakana-25r1100199.workers.dev/',{
+  const res=await fetch('https://integrate.api.nvidia.com/v1/chat/completions',{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
     body:JSON.stringify({model:load(LS.aimodel,'z-ai/glm-5.2'),messages:messages,temperature:0.2,max_tokens:4096,stream:false})});
@@ -1004,4 +1004,89 @@ async function aiCall(messages){
   return(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||'';
 }
 function aiParse(s){
-  s=String(s).replace(/
+  s=String(s).replace(/```json|```/g,'');
+  const a=s.indexOf('{'),b=s.lastIndexOf('}');
+  if(a<0||b<=a)throw new Error('AIの応答からJSONを取り出せませんでした');
+  return JSON.parse(s.slice(a,b+1));
+}
+function aiMsg(m){const el=document.getElementById('aiLog');el.classList.add('show');
+  const d=document.createElement('div');d.textContent=m;el.appendChild(d);el.scrollTop=el.scrollHeight;return d}
+async function aiSend(){
+  if(!load(LS.aikey,''))return toast('😵 下の欄にAPIキーを入れて💾を押してください');
+  const inp=document.getElementById('aiIn'),txt=inp.value.trim();
+  if(!txt)return toast('😵 指示を書いてください');
+  if(!AICONV)AICONV=[{role:'system',content:aiSys()}];
+  AICONV.push({role:'user',content:txt});
+  aiMsg('🧑 '+txt);inp.value='';
+  const wait=aiMsg('🤖 考え中...');
+  try{
+    const out=await aiCall(AICONV);
+    AICONV.push({role:'assistant',content:out});
+    const j=aiParse(out);
+    if(j.action==='ask'){wait.textContent='🤖 '+j.question;toast('❓ AIが質問してます。答えを書いて再送信!')}
+    else if(j.action==='register'){
+      const n=aiApply(j.items||[]);
+      wait.textContent='🤖 '+(j.note||'')+' → ✅ '+n+'件登録しました!';
+      AICONV=null;renderAll();toast('🤖 '+n+'件登録!カレンダーで確認してね')}
+    else wait.textContent='🤖 解釈不能な応答: '+String(out).slice(0,200);
+  }catch(e){
+    let m=String(e.message||e);
+    if(m.indexOf('Failed to fetch')>=0)m+=' → CORSブロックの可能性大。中継が必要なので相談を!';
+    wait.textContent='❌ '+m;
+  }
+}
+function aiApply(items){
+  let n=0;
+  for(const it of items){try{
+    if(it.type==='single'&&it.date){
+      ZATSU.push({id:Date.now()+''+Math.random(),title:it.title||'',url:it.url||'',date:it.date,created:today(),done:false});n++}
+    else if(it.type==='event'&&it.date){
+      ZATSU.push({id:Date.now()+''+Math.random(),title:it.title||'予定',url:it.url||'',date:it.date,created:today(),done:false,
+        ev:true,time:it.time||'',typ:it.kind||'予定',cat:it.kind==='面談'?'人間関係':'趣味'});n++}
+    else if(it.type==='long'&&it.mainDate){
+      const l={id:'L'+Date.now()+n,typ:it.typ==='test'?'test':'comp',name:it.name||'無題',cat:it.typ==='test'?'勉強':'実績',
+        start:it.start||today(),mainDate:it.mainDate,miles:(it.miles||[]).filter(x=>x&&x.date),subs:(it.subs||[]).filter(x=>x&&x.date),
+        perWeek:+it.perWeek||0,contents:it.contents||[],time:'',link:it.link||''};
+      l.end=[l.mainDate].concat(l.miles.map(x=>x.date)).filter(Boolean).sort().pop();
+      l.pw=l.perWeek?pickDays(l.perWeek):[];
+      LONG.push(l);n++}
+    else if(it.type==='routine'&&it.name){
+      const r={id:'c'+Date.now()+n,name:it.name,kind:it.kind||'weekly',time:it.time||'',link:it.link||'',cat:it.cat||'勉強',on:true,custom:true};
+      if(r.kind==='weekly')r.days=(it.days&&it.days.length)?it.days:[1];
+      if(r.kind==='monthlyNth'){r.nth=it.nth||1;r.dow=it.dow||0}
+      if(r.kind==='everyN'){r.n=it.n||2;r.anchor=today()}
+      RULES.push(r);n++}
+  }catch(err){console.error(err)}}
+  save(LS.zatsu,ZATSU);save(LS.long,LONG);save(LS.rules,RULES);
+  return n;
+}
+
+/* ---------- 起動 ---------- */
+function switchPane(pid){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.pane').forEach(x=>x.classList.remove('on'));
+  const tb=document.querySelector('.tab[data-p="'+pid+'"]');if(tb)tb.classList.add('on');
+  document.getElementById(pid).classList.add('on');
+}
+function renderAll(){
+  const parts={renderHome:renderHome,renderZatsu:renderZatsu,renderRules:renderRules,renderLong:renderLong,renderGoals:renderGoals,renderMypro:renderMypro,renderAllView:renderAllView,renderCal:renderCal};
+  for(const nm in parts){try{parts[nm]()}catch(e){console.error('💥',nm,e);toast('💥 '+nm+': '+e.message)}}
+}
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  switchPane(t.dataset.p);
+  if(t.dataset.p==='allPane'){renderAllView();renderCal()}
+  if(t.dataset.p==='myproPane')renderMypro()});
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{
+  if(e.target===m){m.classList.remove('show');save(LS.slackWait,false)}}));
+document.getElementById('nrKind').onchange=renderNrParams;renderNrParams();
+document.getElementById('aiKey').value=load(LS.aikey,'');
+document.getElementById('aiModel').value=load(LS.aimodel,'z-ai/glm-5.2');
+(function(){const dl=document.createElement('datalist');dl.id='times';
+let s='';for(let h=6;h<=23;h++){s+='<option value="'+h+':00"><option value="'+h+':30">'}
+dl.innerHTML=s;document.body.appendChild(dl)})();
+renderAll();
+setTimeout(()=>openHarvest(false),600);
+idbReady.then(()=>{try{renderMypro()}catch(e){}});
+</script>
+</body>
+</html>
